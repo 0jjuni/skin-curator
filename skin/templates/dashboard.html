@@ -172,6 +172,11 @@
       border: 1px solid var(--line);
     }
 
+    .btn:disabled {
+      cursor: not-allowed;
+      opacity: .55;
+    }
+
     .grid {
       display: grid;
       grid-template-columns: minmax(320px, .85fr) minmax(360px, 1.15fr);
@@ -301,6 +306,17 @@
 
     .list-item small { color: var(--muted); }
 
+    button.list-item {
+      width: 100%;
+      cursor: pointer;
+      text-align: left;
+    }
+
+    button.list-item.active {
+      border-color: var(--accent);
+      background: #eef8f3;
+    }
+
     .product {
       align-items: start;
     }
@@ -330,6 +346,17 @@
       min-height: 22px;
       color: var(--muted);
       font-size: 14px;
+    }
+
+    .status.error { color: var(--rose); }
+    .status.success { color: var(--accent-strong); }
+
+    .empty-state {
+      border: 1px dashed var(--line);
+      border-radius: 8px;
+      padding: 18px;
+      color: var(--muted);
+      background: #fafcfb;
     }
 
     .diagnosis-text {
@@ -367,7 +394,6 @@
         <a class="active" href="#analysis">⌁ 분석</a>
         <a href="#history">◴ 이력</a>
         <a href="#recommendations">◈ 추천</a>
-        <a href="/swagger/">▣ API</a>
       </nav>
       <div class="side-panel">
         <label for="login-id">아이디</label>
@@ -387,7 +413,6 @@
         </div>
         <div class="actions">
           <button class="btn ghost" id="history-button" type="button">이력 새로고침</button>
-          <button class="btn secondary" id="docs-button" type="button">문서 열기</button>
         </div>
       </div>
 
@@ -468,221 +493,6 @@
     </main>
   </div>
 
-  <script>
-    const state = {
-      token: localStorage.getItem("skin_access_token") || "",
-      predictionId: null,
-      surveyId: localStorage.getItem("skin_survey_id") || "",
-    };
-
-    const labels = {
-      skinType: ["건성", "중성", "지성"],
-      severity3: ["낮음", "보통", "높음"],
-      moisture: ["부족", "충분"],
-      lips: ["양호", "보통", "건조"],
-    };
-
-    const $ = (id) => document.getElementById(id);
-    const status = (message) => $("status").textContent = message || "";
-
-    function headers(json = true) {
-      const result = {};
-      if (json) result["Content-Type"] = "application/json";
-      if (state.token) result.Authorization = `Bearer ${state.token}`;
-      return result;
-    }
-
-    function updateAuthStatus() {
-      $("auth-status").textContent = state.token ? "로그인됨" : "비로그인";
-    }
-
-    function metric(title, value, probability) {
-      const percent = Math.round((probability || 0) * 100);
-      return `
-        <div class="metric">
-          <span>${title}</span>
-          <strong>${value}</strong>
-          <div class="bar"><i style="--value:${percent}%"></i></div>
-        </div>
-      `;
-    }
-
-    function topProbability(values) {
-      if (!Array.isArray(values) || values.length === 0) return 0;
-      return Math.max(...values);
-    }
-
-    function renderPrediction(data) {
-      state.predictionId = data.id || state.predictionId;
-      $("metrics").innerHTML = [
-        metric("피부 타입", labels.skinType[data.skin_type_prediction] || "-", topProbability(data.skin_type_probabilities)),
-        metric("색소 침착", labels.severity3[data.forehead_pigmentation_prediction] || "-", topProbability(data.forehead_pigmentation_probabilities)),
-        metric("왼쪽 모공", labels.severity3[data.left_cheek_pore_prediction] || "-", topProbability(data.left_cheek_pore_probabilities)),
-        metric("오른쪽 모공", labels.severity3[data.right_cheek_pore_prediction] || "-", topProbability(data.right_cheek_pore_probabilities)),
-        metric("이마 수분", labels.moisture[data.forehead_moisture_prediction] || "-", topProbability(data.forehead_moisture_probabilities)),
-        metric("입술 건조", labels.lips[data.lips_dryness_prediction] || "-", topProbability(data.lips_dryness_probabilities)),
-      ].join("");
-
-      if (data.marked_image_url) {
-        $("marked-image").innerHTML = `<img src="${data.marked_image_url}" alt="랜드마크 이미지" style="width:100%;border-radius:8px;border:1px solid var(--line)">`;
-      }
-    }
-
-    async function login() {
-      status("로그인 중입니다.");
-      const response = await fetch("/api/accounts/login/", {
-        method: "POST",
-        headers: headers(),
-        body: JSON.stringify({ id: $("login-id").value, password: $("login-password").value }),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.detail || "로그인 실패");
-      state.token = data.access;
-      localStorage.setItem("skin_access_token", state.token);
-      updateAuthStatus();
-      status(`${data.user?.name || data.user?.id || "사용자"}님으로 로그인했습니다.`);
-      loadHistory();
-    }
-
-    async function saveSurvey() {
-      status("설문을 저장 중입니다.");
-      const response = await fetch("/api/surveys/", {
-        method: "POST",
-        headers: headers(),
-        body: JSON.stringify({
-          atopy_level: Number($("atopy").value),
-          acne_level: Number($("acne").value),
-          sensitivity_level: Number($("sensitivity").value),
-        }),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.detail || data.non_field_errors?.[0] || "설문 저장 실패");
-      state.surveyId = data.user || String(data.id);
-      localStorage.setItem("skin_survey_id", state.surveyId);
-      status("설문이 저장됐습니다.");
-    }
-
-    async function analyze() {
-      const file = $("image-input").files[0];
-      if (!file) {
-        status("이미지를 먼저 선택하세요.");
-        return;
-      }
-      status("피부 분석을 실행 중입니다.");
-      const body = new FormData();
-      body.append("image", file);
-      const response = await fetch("/api/diagnostics/", {
-        method: "POST",
-        headers: headers(false),
-        body,
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "분석 실패");
-      renderPrediction(data);
-      status("분석이 완료됐습니다.");
-      if (state.token) loadHistory();
-    }
-
-    async function loadHistory() {
-      if (!state.token) {
-        $("history-list").innerHTML = `<div class="status">로그인 후 이력을 볼 수 있습니다.</div>`;
-        return;
-      }
-      const response = await fetch("/api/diagnostics/history/", { headers: headers(false) });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.detail || "이력 조회 실패");
-      $("history-list").innerHTML = data.length
-        ? data.map((item) => `
-          <button class="list-item" type="button" data-id="${item.id}">
-            <span><strong>${labels.skinType[item.skin_type_prediction] || "분석"}</strong><br><small>${item.created_at || ""}</small></span>
-            <span>${labels.lips[item.lips_dryness_prediction] || "-"}</span>
-          </button>
-        `).join("")
-        : `<div class="status">저장된 이력이 없습니다.</div>`;
-
-      document.querySelectorAll("[data-id]").forEach((button) => {
-        button.addEventListener("click", () => {
-          state.predictionId = Number(button.dataset.id);
-          status(`선택된 진단 ID: ${state.predictionId}`);
-        });
-      });
-    }
-
-    async function generateDiagnosis() {
-      if (!state.predictionId) {
-        status("저장된 분석 결과를 선택하세요.");
-        return;
-      }
-      status("AI 진단을 생성 중입니다.");
-      const response = await fetch("/api/generate/", {
-        method: "POST",
-        headers: headers(),
-        body: JSON.stringify({ prediction_id: state.predictionId }),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "AI 진단 실패");
-      $("diagnosis-text").textContent = data.diagnosis_text || "";
-      status("AI 진단이 준비됐습니다.");
-    }
-
-    async function recommend() {
-      if (!state.predictionId) {
-        status("추천에 사용할 분석 결과를 선택하세요.");
-        return;
-      }
-      const payload = { prediction_id: state.predictionId };
-      if (!state.token) payload.survey_id = state.surveyId;
-      status("제품 추천을 계산 중입니다.");
-      const response = await fetch("/api/recommendations_data/", {
-        method: "POST",
-        headers: headers(),
-        body: JSON.stringify(payload),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.detail || "추천 실패");
-      const products = data.recommended_data || [];
-      $("product-list").innerHTML = products.length
-        ? products.map((item) => `
-          <div class="list-item product">
-            <img src="${item.logo}" alt="">
-            <span class="product-main">
-              <strong>${item.brand}</strong>
-              <span>${item.title}</span>
-              <small>${item.category || ""} ${item.etc || ""}</small>
-            </span>
-            <span class="price">${Number(item.price || 0).toLocaleString()}원</span>
-          </div>
-        `).join("")
-        : `<div class="status">추천할 제품 데이터가 없습니다.</div>`;
-      status("추천이 완료됐습니다.");
-    }
-
-    function bind() {
-      updateAuthStatus();
-      $("login-button").addEventListener("click", () => login().catch((error) => status(error.message)));
-      $("logout-button").addEventListener("click", () => {
-        state.token = "";
-        localStorage.removeItem("skin_access_token");
-        updateAuthStatus();
-        status("토큰을 초기화했습니다.");
-      });
-      $("survey-button").addEventListener("click", () => saveSurvey().catch((error) => status(error.message)));
-      $("analyze-button").addEventListener("click", () => analyze().catch((error) => status(error.message)));
-      $("history-button").addEventListener("click", () => loadHistory().catch((error) => status(error.message)));
-      $("diagnosis-button").addEventListener("click", () => generateDiagnosis().catch((error) => status(error.message)));
-      $("recommend-button").addEventListener("click", () => recommend().catch((error) => status(error.message)));
-      $("docs-button").addEventListener("click", () => location.href = "/redoc/");
-      $("image-input").addEventListener("change", (event) => {
-        const file = event.target.files[0];
-        if (!file) return;
-        $("preview").src = URL.createObjectURL(file);
-        $("preview").classList.remove("hidden");
-        $("preview-empty").classList.add("hidden");
-      });
-      loadHistory().catch(() => {});
-    }
-
-    bind();
-  </script>
+  <script src="{% static 'js/dashboard.js' %}" defer></script>
 </body>
 </html>
