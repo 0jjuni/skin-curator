@@ -1,5 +1,4 @@
 from django.conf import settings
-from django.contrib.auth import get_user_model
 from django.contrib.sites.shortcuts import get_current_site
 from django.core.mail import EmailMultiAlternatives
 from django.shortcuts import redirect
@@ -9,8 +8,6 @@ from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from rest_framework import generics, status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
-from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.views import TokenObtainPairView
 
 from .models import CustomUser
 from .serializers import CustomUserSerializer
@@ -62,48 +59,3 @@ class ActivateAccountView(generics.GenericAPIView):
         user.is_active = True
         user.save(update_fields=["is_active"])
         return redirect("/")
-
-
-class CustomTokenObtainPairView(TokenObtainPairView):
-    permission_classes = [AllowAny]
-
-    def post(self, request, *args, **kwargs):
-        User = get_user_model()
-        user_id = request.data.get("id")
-        password = request.data.get("password")
-
-        try:
-            user = User.objects.get(id=user_id)
-        except User.DoesNotExist:
-            return self.invalid_credentials_response()
-
-        if not user.check_password(password):
-            return self.invalid_credentials_response()
-
-        if not user.is_active:
-            return Response(
-                {"detail": "계정 활성화 후 로그인할 수 있습니다."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-
-        refresh = RefreshToken.for_user(user)
-        return Response(
-            {
-                "detail": "로그인에 성공했습니다.",
-                "access": str(refresh.access_token),
-                "refresh": str(refresh),
-                "user": {
-                    "id": user.id,
-                    "email": user.email,
-                    "name": user.name,
-                    "is_active": user.is_active,
-                },
-            },
-            status=status.HTTP_200_OK,
-        )
-
-    def invalid_credentials_response(self):
-        return Response(
-            {"detail": "아이디 또는 비밀번호가 올바르지 않습니다."},
-            status=status.HTTP_401_UNAUTHORIZED,
-        )

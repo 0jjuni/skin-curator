@@ -66,17 +66,3 @@ class PredictionSerializer(serializers.Serializer):
 
     # 얼굴 좌표가 표시된 이미지 URL (로그인 여부와 관계없이 항상 포함)
     marked_image_url = serializers.CharField(max_length=500, required=False, allow_blank=True)
-
-    def to_representation(self, instance):
-        """로그인된 사용자만 'id' 필드를 포함하도록 조건적 직렬화"""
-        representation = super().to_representation(instance)
-        request = self.context.get('request')
-
-        # 로그인된 경우에만 'id' 필드를 추가
-        if request and request.user.is_authenticated:
-            representation['id'] = instance.id
-        else:
-            # 비로그인 상태에서 'id' 필드를 제거
-            representation.pop('id', None)
-
-        return representation

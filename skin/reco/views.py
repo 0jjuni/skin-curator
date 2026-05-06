@@ -1,4 +1,5 @@
 import numpy as np
+from django.db.models import Q
 from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
 from rest_framework.response import Response
@@ -6,6 +7,7 @@ from rest_framework.views import APIView
 from sklearn.metrics.pairwise import cosine_similarity
 
 from diagnostics.models import PredictionResult
+from diagnostics.views import ensure_session_key
 from .models import ProductFeature, ProductInfo, Survey
 from .serializers import ProductInfoSerializer, SurveySerializer
 
@@ -54,9 +56,13 @@ class UserRecommendationView(APIView):
         if not prediction_id:
             raise ValidationError("body: prediction_id가 없습니다.")
 
-        try:
-            prediction = PredictionResult.objects.get(id=prediction_id)
-        except PredictionResult.DoesNotExist:
+        session_key = ensure_session_key(request)
+        prediction_query = Q(id=prediction_id, session_key=session_key)
+        if user:
+            prediction_query |= Q(id=prediction_id, user=user)
+
+        prediction = PredictionResult.objects.filter(prediction_query).first()
+        if not prediction:
             raise NotFound("해당 prediction_id의 예측 결과를 찾을 수 없습니다.")
 
         survey = self._get_survey(request, user)

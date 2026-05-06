@@ -5,4 +5,4 @@ from .models import LlmDiagnosisResult
 class LlmDiagnosisResultSerializer(serializers.ModelSerializer):
     class Meta:
         model = LlmDiagnosisResult
-        fields = ['user', 'prediction', 'diagnosis_text', 'created_at']
+        fields = ['prediction', 'diagnosis_text', 'created_at']

@@ -4,201 +4,302 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Skin Care Lab</title>
+  <title>Skin Curator</title>
   <style>
     :root {
-      --ink: #18201f;
-      --muted: #60706d;
-      --line: #dbe5df;
-      --panel: #ffffff;
-      --panel-soft: #f5f8f6;
-      --accent: #27715f;
-      --accent-strong: #174d42;
-      --warn: #ad5a2a;
-      --rose: #c7566b;
-      --blue: #47778d;
-      --shadow: 0 18px 48px rgba(22, 43, 38, .12);
+      --ink: #17201f;
+      --muted: #6a7472;
+      --soft: #f7f2ef;
+      --surface: #ffffff;
+      --surface-2: #f8fbfa;
+      --line: #e3e7e4;
+      --teal: #127464;
+      --teal-dark: #0b5148;
+      --coral: #d96f62;
+      --rose: #b9556d;
+      --lavender: #7c6aa7;
+      --gold: #b78945;
+      --shadow: 0 20px 70px rgba(31, 41, 38, .12);
+      --radius: 8px;
     }
 
     * { box-sizing: border-box; }
 
+    html { scroll-behavior: smooth; }
+
     body {
       margin: 0;
       color: var(--ink);
-      background: #eef4f0;
+      background:
+        linear-gradient(140deg, rgba(217, 111, 98, .12), transparent 28%),
+        linear-gradient(320deg, rgba(18, 116, 100, .13), transparent 32%),
+        #f5f7f4;
       font-family: Inter, Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
 
     button, input, select { font: inherit; }
 
-    .shell {
+    button { border: 0; }
+
+    .app-shell {
       min-height: 100vh;
       display: grid;
-      grid-template-columns: 280px 1fr;
+      grid-template-columns: 272px minmax(0, 1fr);
     }
 
-    aside {
-      min-height: 100vh;
-      padding: 28px 22px;
-      background: #10231f;
-      color: #edf7f2;
+    .sidebar {
       position: sticky;
       top: 0;
+      min-height: 100vh;
+      padding: 28px 22px;
+      background: rgba(255, 255, 255, .82);
+      border-right: 1px solid rgba(227, 231, 228, .85);
+      backdrop-filter: blur(24px);
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
     }
 
     .brand {
       display: flex;
-      align-items: center;
       gap: 12px;
-      margin-bottom: 32px;
+      align-items: center;
     }
 
     .brand-mark {
-      width: 42px;
-      height: 42px;
+      width: 44px;
+      height: 44px;
+      border-radius: var(--radius);
       display: grid;
       place-items: center;
-      background: #dff2e9;
-      color: #174d42;
-      border-radius: 8px;
-      font-weight: 800;
+      color: #fff;
+      font-weight: 900;
+      background: linear-gradient(145deg, var(--teal), var(--coral));
+      box-shadow: 0 14px 30px rgba(18, 116, 100, .24);
     }
 
-    .brand strong { display: block; font-size: 18px; }
-    .brand span { color: #a9c9be; font-size: 13px; }
+    .brand strong {
+      display: block;
+      font-size: 18px;
+      letter-spacing: 0;
+    }
+
+    .brand span {
+      color: var(--muted);
+      font-size: 13px;
+    }
 
     nav {
       display: grid;
       gap: 8px;
-      margin-bottom: 28px;
     }
 
     nav a {
-      color: #d8e9e2;
-      text-decoration: none;
-      padding: 11px 12px;
-      border-radius: 6px;
       display: flex;
-      gap: 10px;
       align-items: center;
+      gap: 10px;
+      color: #30403d;
+      text-decoration: none;
+      padding: 12px 12px;
+      border-radius: var(--radius);
+      font-weight: 700;
     }
 
-    nav a.active, nav a:hover { background: rgba(255,255,255,.09); }
+    nav a.active,
+    nav a:hover {
+      background: #eaf4f0;
+      color: var(--teal-dark);
+    }
 
-    .side-panel {
-      border-top: 1px solid rgba(255,255,255,.14);
-      padding-top: 22px;
+    .field {
       display: grid;
-      gap: 12px;
+      gap: 7px;
     }
 
-    .side-panel label,
     .field label {
       color: var(--muted);
       font-size: 12px;
-      font-weight: 700;
-      letter-spacing: 0;
+      font-weight: 800;
     }
 
-    aside .side-panel label { color: #b5d0c6; }
-
-    .side-panel input,
-    .field input,
-    .field select {
+    input,
+    select {
       width: 100%;
       border: 1px solid var(--line);
-      border-radius: 6px;
-      padding: 11px 12px;
+      border-radius: var(--radius);
+      padding: 12px 12px;
       background: #fff;
       color: var(--ink);
+      outline: none;
     }
 
-    .side-panel input {
-      border-color: rgba(255,255,255,.18);
-      background: rgba(255,255,255,.08);
-      color: #fff;
+    input:focus,
+    select:focus {
+      border-color: rgba(18, 116, 100, .75);
+      box-shadow: 0 0 0 3px rgba(18, 116, 100, .12);
     }
 
     .main {
+      min-width: 0;
       padding: 28px;
       display: grid;
       gap: 22px;
       align-content: start;
     }
 
-    .topbar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 16px;
+    .hero {
+      min-height: 310px;
+      border-radius: var(--radius);
+      overflow: hidden;
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(360px, .95fr);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(227, 231, 228, .9);
+    }
+
+    .hero-copy {
+      padding: 36px;
+      display: grid;
+      align-content: center;
+      gap: 18px;
+    }
+
+    .eyebrow {
+      margin: 0;
+      color: var(--teal);
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: .08em;
+      text-transform: uppercase;
     }
 
     h1 {
       margin: 0;
-      font-size: 30px;
-      line-height: 1.15;
+      max-width: 720px;
+      font-size: 40px;
+      line-height: 1.08;
       letter-spacing: 0;
     }
 
-    .topbar p {
-      margin: 6px 0 0;
+    .hero-copy > p:not(.eyebrow) {
+      margin: 0;
       color: var(--muted);
+      font-size: 16px;
+      line-height: 1.65;
+      max-width: 620px;
+    }
+
+    .hero-visual {
+      min-height: 310px;
+      background:
+        linear-gradient(90deg, rgba(255,255,255,.1), rgba(255,255,255,.62)),
+        url("https://images.unsplash.com/photo-1616394584738-fc6e612e71b9?auto=format&fit=crop&w=1200&q=80");
+      background-size: cover;
+      background-position: center;
+      position: relative;
+    }
+
+    .hero-badge {
+      position: absolute;
+      right: 24px;
+      bottom: 24px;
+      width: min(280px, calc(100% - 48px));
+      padding: 16px;
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, .88);
+      border: 1px solid rgba(255,255,255,.65);
+      box-shadow: 0 20px 55px rgba(31, 41, 38, .18);
+      backdrop-filter: blur(16px);
+    }
+
+    .hero-badge span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      margin-bottom: 6px;
+    }
+
+    .hero-badge strong {
+      display: block;
+      font-size: 22px;
     }
 
     .actions {
       display: flex;
-      gap: 8px;
+      align-items: center;
+      gap: 10px;
       flex-wrap: wrap;
     }
 
     .btn {
-      border: 0;
-      border-radius: 6px;
-      padding: 11px 14px;
-      color: white;
-      background: var(--accent);
-      cursor: pointer;
       min-height: 42px;
+      border-radius: var(--radius);
+      padding: 11px 15px;
+      color: #fff;
+      background: var(--teal);
+      cursor: pointer;
+      font-weight: 800;
+      transition: transform .16s ease, box-shadow .16s ease, opacity .16s ease;
+      box-shadow: 0 12px 26px rgba(18, 116, 100, .2);
+    }
+
+    .btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 18px 30px rgba(18, 116, 100, .22);
     }
 
     .btn.secondary {
-      color: var(--accent-strong);
-      background: #dcefe7;
+      color: var(--teal-dark);
+      background: #e3f2ed;
+      box-shadow: none;
     }
 
     .btn.ghost {
       color: var(--ink);
       background: #fff;
       border: 1px solid var(--line);
+      box-shadow: none;
+    }
+
+    .btn.coral {
+      background: var(--coral);
+      box-shadow: 0 12px 26px rgba(217, 111, 98, .22);
     }
 
     .btn:disabled {
       cursor: not-allowed;
-      opacity: .55;
+      opacity: .52;
+      transform: none;
+      box-shadow: none;
     }
 
-    .grid {
+    .dashboard-grid {
       display: grid;
-      grid-template-columns: minmax(320px, .85fr) minmax(360px, 1.15fr);
+      grid-template-columns: minmax(330px, .9fr) minmax(420px, 1.1fr);
       gap: 18px;
       align-items: start;
     }
 
-    section {
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      box-shadow: var(--shadow);
+    .panel {
+      background: rgba(255, 255, 255, .92);
+      border: 1px solid rgba(227, 231, 228, .95);
+      border-radius: var(--radius);
+      box-shadow: 0 18px 55px rgba(31, 41, 38, .09);
       overflow: hidden;
     }
 
-    .section-head {
+    .panel.wide { grid-column: 1 / -1; }
+
+    .panel-head {
       padding: 18px 20px;
       border-bottom: 1px solid var(--line);
       display: flex;
       justify-content: space-between;
       align-items: center;
-      gap: 12px;
+      gap: 14px;
+      background: linear-gradient(180deg, rgba(255,255,255,.95), rgba(248,251,250,.95));
     }
 
     h2 {
@@ -207,33 +308,72 @@
       letter-spacing: 0;
     }
 
-    .content {
+    .panel-subtitle {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .panel-body {
       padding: 20px;
       display: grid;
       gap: 16px;
     }
 
     .upload-zone {
-      min-height: 280px;
-      border: 1px dashed #a9bbb5;
-      border-radius: 8px;
-      background: #f8fbf9;
+      min-height: 300px;
+      border: 1px dashed #b8c8c2;
+      border-radius: var(--radius);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.78), rgba(248,251,250,.9)),
+        radial-gradient(circle at 70% 20%, rgba(217, 111, 98, .14), transparent 28%),
+        radial-gradient(circle at 28% 78%, rgba(18, 116, 100, .14), transparent 34%);
       display: grid;
       place-items: center;
-      padding: 18px;
+      padding: 22px;
       text-align: center;
       cursor: pointer;
+      transition: border-color .16s ease, transform .16s ease;
+    }
+
+    .upload-zone:hover {
+      border-color: var(--teal);
+      transform: translateY(-1px);
     }
 
     .upload-zone img {
       max-width: 100%;
-      max-height: 260px;
-      border-radius: 8px;
+      max-height: 280px;
+      border-radius: var(--radius);
       object-fit: contain;
+      box-shadow: 0 18px 45px rgba(31, 41, 38, .16);
     }
 
-    .upload-zone strong { display: block; margin-bottom: 6px; }
-    .upload-zone span { color: var(--muted); font-size: 14px; }
+    .upload-icon {
+      width: 58px;
+      height: 58px;
+      margin: 0 auto 14px;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      background: #fff;
+      color: var(--teal);
+      box-shadow: 0 14px 35px rgba(31, 41, 38, .11);
+      font-size: 24px;
+      font-weight: 900;
+    }
+
+    .upload-zone strong {
+      display: block;
+      margin-bottom: 7px;
+      font-size: 18px;
+    }
+
+    .upload-zone span {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
     .hidden { display: none; }
 
     .survey-grid {
@@ -249,30 +389,43 @@
     }
 
     .metric {
+      min-height: 104px;
       border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 14px;
-      background: var(--panel-soft);
-      min-height: 96px;
+      border-radius: var(--radius);
+      padding: 15px;
+      background: var(--surface-2);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .metric::after {
+      content: "";
+      position: absolute;
+      width: 64px;
+      height: 64px;
+      border-radius: 999px;
+      right: -20px;
+      top: -24px;
+      background: rgba(217, 111, 98, .12);
     }
 
     .metric span {
       color: var(--muted);
       font-size: 12px;
-      font-weight: 700;
+      font-weight: 900;
     }
 
     .metric strong {
       display: block;
-      margin-top: 7px;
-      font-size: 19px;
+      margin-top: 8px;
+      font-size: 22px;
     }
 
     .bar {
-      height: 7px;
+      height: 8px;
       border-radius: 999px;
-      background: #d9e5df;
-      margin-top: 12px;
+      background: #e0e8e4;
+      margin-top: 14px;
       overflow: hidden;
     }
 
@@ -280,11 +433,14 @@
       display: block;
       height: 100%;
       width: var(--value, 0%);
-      background: var(--accent);
+      background: linear-gradient(90deg, var(--teal), var(--coral));
     }
 
-    .wide {
-      grid-column: 1 / -1;
+    .marked-image img {
+      width: 100%;
+      border-radius: var(--radius);
+      border: 1px solid var(--line);
+      box-shadow: 0 18px 45px rgba(31, 41, 38, .12);
     }
 
     .history-list,
@@ -295,16 +451,14 @@
 
     .list-item {
       border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 13px 14px;
+      border-radius: var(--radius);
+      padding: 14px;
       background: #fff;
       display: flex;
       justify-content: space-between;
       gap: 12px;
       align-items: center;
     }
-
-    .list-item small { color: var(--muted); }
 
     button.list-item {
       width: 100%;
@@ -313,32 +467,48 @@
     }
 
     button.list-item.active {
-      border-color: var(--accent);
-      background: #eef8f3;
+      border-color: var(--teal);
+      background: #edf8f4;
+      box-shadow: inset 4px 0 0 var(--teal);
+    }
+
+    .list-item small {
+      color: var(--muted);
     }
 
     .product {
-      align-items: start;
+      align-items: center;
+      transition: transform .16s ease, box-shadow .16s ease;
+    }
+
+    .product:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 14px 35px rgba(31, 41, 38, .1);
     }
 
     .product img {
-      width: 48px;
-      height: 48px;
+      width: 58px;
+      height: 58px;
       object-fit: cover;
-      border-radius: 6px;
+      border-radius: var(--radius);
       border: 1px solid var(--line);
-      background: #f7faf8;
+      background: #f6f2ef;
     }
 
     .product-main {
+      min-width: 0;
+      flex: 1;
       display: grid;
       gap: 3px;
-      flex: 1;
+    }
+
+    .product-main span {
+      color: #34413f;
     }
 
     .price {
-      font-weight: 800;
-      color: var(--accent-strong);
+      color: var(--teal-dark);
+      font-weight: 900;
       white-space: nowrap;
     }
 
@@ -349,142 +519,193 @@
     }
 
     .status.error { color: var(--rose); }
-    .status.success { color: var(--accent-strong); }
+    .status.success { color: var(--teal-dark); }
 
     .empty-state {
-      border: 1px dashed var(--line);
-      border-radius: 8px;
-      padding: 18px;
+      border: 1px dashed #cfd8d4;
+      border-radius: var(--radius);
+      padding: 20px;
       color: var(--muted);
-      background: #fafcfb;
+      background: linear-gradient(135deg, #fff, #f8fbfa);
     }
 
     .diagnosis-text {
-      line-height: 1.7;
+      line-height: 1.75;
       white-space: pre-wrap;
       color: #263331;
+      background: #fff;
+      border-radius: var(--radius);
     }
 
-    @media (max-width: 980px) {
-      .shell { grid-template-columns: 1fr; }
-      aside { min-height: auto; position: static; }
-      .grid { grid-template-columns: 1fr; }
-      .topbar { align-items: flex-start; flex-direction: column; }
+    @media (max-width: 1060px) {
+      .app-shell { grid-template-columns: 1fr; }
+      .sidebar {
+        min-height: auto;
+        position: static;
+        flex-direction: row;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      nav {
+        margin-left: auto;
+        grid-auto-flow: column;
+      }
+      .hero,
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+      }
     }
 
-    @media (max-width: 620px) {
-      .main { padding: 18px; }
+    @media (max-width: 680px) {
+      .main { padding: 16px; }
+      .hero-copy { padding: 24px; }
+      h1 { font-size: 30px; }
+      .survey-grid,
       .metric-grid,
-      .survey-grid { grid-template-columns: 1fr; }
-      h1 { font-size: 24px; }
+      nav {
+        width: 100%;
+        margin-left: 0;
+      }
+      .panel-head {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+      .price { white-space: normal; }
     }
   </style>
 </head>
 <body>
-  <div class="shell">
-    <aside>
+  <div class="app-shell">
+    <aside class="sidebar">
       <div class="brand">
-        <div class="brand-mark">SL</div>
+        <div class="brand-mark">SC</div>
         <div>
-          <strong>Skin Lab</strong>
-          <span>diagnosis workspace</span>
+          <strong>Skin Curator</strong>
+          <span>analysis & cosmetics match</span>
         </div>
       </div>
+
       <nav aria-label="primary">
-        <a class="active" href="#analysis">⌁ 분석</a>
-        <a href="#history">◴ 이력</a>
-        <a href="#recommendations">◈ 추천</a>
+        <a class="active" href="#analysis">분석</a>
+        <a href="#history">이력</a>
+        <a href="#recommendations">추천</a>
       </nav>
-      <div class="side-panel">
-        <label for="login-id">아이디</label>
-        <input id="login-id" autocomplete="username" placeholder="user01">
-        <label for="login-password">비밀번호</label>
-        <input id="login-password" autocomplete="current-password" type="password" placeholder="password">
-        <button class="btn" id="login-button" type="button">로그인</button>
-        <button class="btn secondary" id="logout-button" type="button">토큰 초기화</button>
-      </div>
     </aside>
 
     <main class="main">
-      <div class="topbar">
-        <div>
-          <h1>피부 분석과 제품 추천을 한 화면에서</h1>
-          <p>이미지 진단, 설문, LLM 코멘트, 추천 API를 연결했습니다.</p>
-        </div>
-        <div class="actions">
-          <button class="btn ghost" id="history-button" type="button">이력 새로고침</button>
-        </div>
-      </div>
-
-      <div class="grid" id="analysis">
-        <section>
-          <div class="section-head">
-            <h2>분석 입력</h2>
-            <span class="status" id="auth-status">비로그인</span>
+      <section class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">AI Skin Diagnosis</p>
+          <h1>피부 상태를 읽고, 오늘 필요한 화장품을 추천합니다.</h1>
+          <p>얼굴 이미지를 업로드하면 피부 타입, 수분, 모공, 색소침착, 입술 건조도를 분석하고 설문 정보와 함께 맞춤 제품을 골라줍니다.</p>
+          <div class="actions">
+            <a class="btn coral" href="#analysis">분석 시작</a>
+            <button class="btn ghost" id="history-button" type="button">이력 새로고침</button>
           </div>
-          <div class="content">
+        </div>
+        <div class="hero-visual" aria-hidden="true">
+          <div class="hero-badge">
+            <span>Personal routine signal</span>
+            <strong id="session-status">세션 저장</strong>
+          </div>
+        </div>
+      </section>
+
+      <div class="dashboard-grid" id="analysis">
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>피부 이미지 분석</h2>
+              <p class="panel-subtitle">정면 얼굴 사진을 선택하거나 끌어다 놓으세요.</p>
+            </div>
+          </div>
+          <div class="panel-body">
             <label class="upload-zone" for="image-input" id="drop-zone">
               <input class="hidden" id="image-input" type="file" accept="image/*">
               <span id="preview-empty">
-                <strong>얼굴 이미지를 선택하세요</strong>
-                <span>JPG, PNG 파일</span>
+                <span class="upload-icon">+</span>
+                <strong>얼굴 이미지 업로드</strong>
+                <span>JPG, PNG 파일을 지원합니다.</span>
               </span>
               <img class="hidden" id="preview" alt="선택한 이미지 미리보기">
             </label>
+
             <div class="survey-grid">
               <div class="field">
-                <label for="atopy">아토피</label>
+                <label for="atopy">아토피 민감도</label>
                 <select id="atopy">
-                  <option value="1">1</option><option value="2">2</option><option value="3" selected>3</option><option value="4">4</option><option value="5">5</option>
+                  <option value="1">1 낮음</option>
+                  <option value="2">2</option>
+                  <option value="3" selected>3 보통</option>
+                  <option value="4">4</option>
+                  <option value="5">5 높음</option>
                 </select>
               </div>
               <div class="field">
-                <label for="acne">여드름</label>
+                <label for="acne">트러블 정도</label>
                 <select id="acne">
-                  <option value="1">1</option><option value="2">2</option><option value="3" selected>3</option><option value="4">4</option><option value="5">5</option>
+                  <option value="1">1 낮음</option>
+                  <option value="2">2</option>
+                  <option value="3" selected>3 보통</option>
+                  <option value="4">4</option>
+                  <option value="5">5 높음</option>
                 </select>
               </div>
               <div class="field">
-                <label for="sensitivity">민감성</label>
+                <label for="sensitivity">피부 민감도</label>
                 <select id="sensitivity">
-                  <option value="1">1</option><option value="2">2</option><option value="3" selected>3</option><option value="4">4</option><option value="5">5</option>
+                  <option value="1">1 낮음</option>
+                  <option value="2">2</option>
+                  <option value="3" selected>3 보통</option>
+                  <option value="4">4</option>
+                  <option value="5">5 높음</option>
                 </select>
               </div>
             </div>
+
             <div class="actions">
-              <button class="btn" id="analyze-button" type="button">분석 시작</button>
+              <button class="btn" id="analyze-button" type="button">분석 실행</button>
               <button class="btn secondary" id="survey-button" type="button">설문 저장</button>
             </div>
             <div class="status" id="status"></div>
           </div>
         </section>
 
-        <section>
-          <div class="section-head">
-            <h2>분석 결과</h2>
-            <button class="btn ghost" id="diagnosis-button" type="button">AI 진단</button>
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>분석 결과</h2>
+              <p class="panel-subtitle">확률이 높은 항목일수록 바가 길게 표시됩니다.</p>
+            </div>
+            <button class="btn ghost" id="diagnosis-button" type="button">AI 코멘트</button>
           </div>
-          <div class="content">
+          <div class="panel-body">
             <div class="metric-grid" id="metrics"></div>
-            <div id="marked-image"></div>
+            <div class="marked-image" id="marked-image"></div>
           </div>
         </section>
 
-        <section class="wide" id="history">
-          <div class="section-head">
-            <h2>진단 이력</h2>
-            <button class="btn ghost" id="recommend-button" type="button">추천 받기</button>
+        <section class="panel wide" id="history">
+          <div class="panel-head">
+            <div>
+              <h2>진단 이력</h2>
+              <p class="panel-subtitle">저장된 분석 결과를 선택해 추천과 코멘트를 이어서 확인하세요.</p>
+            </div>
+            <button class="btn ghost" id="recommend-button" type="button">제품 추천 받기</button>
           </div>
-          <div class="content">
+          <div class="panel-body">
             <div class="history-list" id="history-list"></div>
           </div>
         </section>
 
-        <section class="wide" id="recommendations">
-          <div class="section-head">
-            <h2>추천과 코멘트</h2>
+        <section class="panel wide" id="recommendations">
+          <div class="panel-head">
+            <div>
+              <h2>맞춤 코멘트와 추천 화장품</h2>
+              <p class="panel-subtitle">피부 신호와 설문 정보를 함께 반영한 추천 결과입니다.</p>
+            </div>
           </div>
-          <div class="content">
+          <div class="panel-body">
             <div class="diagnosis-text" id="diagnosis-text"></div>
             <div class="product-list" id="product-list"></div>
           </div>

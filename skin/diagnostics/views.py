@@ -1,8 +1,8 @@
 import logging
 
+from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from rest_framework import status
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -12,6 +12,20 @@ from .serializers import PredictionSerializer
 
 
 logger = logging.getLogger(__name__)
+
+
+def ensure_session_key(request):
+    if not request.session.session_key:
+        request.session.create()
+    return request.session.session_key
+
+
+def visible_predictions(request):
+    session_key = ensure_session_key(request)
+    query = Q(session_key=session_key)
+    if request.user.is_authenticated:
+        query |= Q(user=request.user)
+    return PredictionResult.objects.filter(query)
 
 
 class CropAndPredictAPIView(APIView):
@@ -31,11 +45,9 @@ class CropAndPredictAPIView(APIView):
         serializer = PredictionSerializer(data=prediction_data)
         serializer.is_valid(raise_exception=True)
 
-        if not request.user.is_authenticated:
-            return Response(serializer.validated_data, status=status.HTTP_200_OK)
-
         prediction_instance = PredictionResult.objects.create(
-            user=request.user,
+            user=request.user if request.user.is_authenticated else None,
+            session_key=ensure_session_key(request),
             **serializer.validated_data,
         )
         result_serializer = PredictionSerializer(prediction_instance, context={"request": request})
@@ -43,18 +55,14 @@ class CropAndPredictAPIView(APIView):
 
 
 class UserDiagnosticsAPIView(APIView):
-    permission_classes = [IsAuthenticated]
-
     def get(self, request, *args, **kwargs):
-        predictions = PredictionResult.objects.filter(user=request.user).order_by("-created_at")
+        predictions = visible_predictions(request).order_by("-created_at")
         serializer = PredictionSerializer(predictions, many=True, context={"request": request})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class PredictionResultDeleteAPIView(APIView):
-    permission_classes = [IsAuthenticated]
-
     def delete(self, request, pk, *args, **kwargs):
-        prediction_result = get_object_or_404(PredictionResult, pk=pk, user=request.user)
+        prediction_result = get_object_or_404(visible_predictions(request), pk=pk)
         prediction_result.delete()
         return Response({"message": "해당 진단 결과가 삭제되었습니다."}, status=status.HTTP_204_NO_CONTENT)

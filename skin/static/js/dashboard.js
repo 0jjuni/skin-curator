@@ -1,8 +1,5 @@
 (() => {
   const storageKeys = {
-    accessToken: "skin_access_token",
-    refreshToken: "skin_refresh_token",
-    user: "skin_user",
     surveyId: "skin_survey_id",
     selectedPredictionId: "skin_prediction_id",
   };
@@ -15,27 +12,15 @@
   };
 
   const state = {
-    token: localStorage.getItem(storageKeys.accessToken) || "",
-    refresh: localStorage.getItem(storageKeys.refreshToken) || "",
-    user: parseJson(localStorage.getItem(storageKeys.user)),
     surveyId: localStorage.getItem(storageKeys.surveyId) || "",
     predictionId: Number(localStorage.getItem(storageKeys.selectedPredictionId)) || null,
     prediction: null,
+    history: [],
     busy: false,
   };
 
-  const $ = (id) => document.getElementById(id);
-
   const elements = {};
-
-  function parseJson(value) {
-    if (!value) return null;
-    try {
-      return JSON.parse(value);
-    } catch {
-      return null;
-    }
-  }
+  const $ = (id) => document.getElementById(id);
 
   function escapeHtml(value) {
     return String(value ?? "")
@@ -47,8 +32,7 @@
   }
 
   function money(value) {
-    const number = Number(value || 0);
-    return `${number.toLocaleString("ko-KR")}원`;
+    return `${Number(value || 0).toLocaleString("ko-KR")}원`;
   }
 
   function formatDate(value) {
@@ -70,50 +54,28 @@
 
   function setBusy(isBusy, message) {
     state.busy = isBusy;
-    [
-      elements.loginButton,
-      elements.logoutButton,
-      elements.surveyButton,
-      elements.analyzeButton,
-      elements.historyButton,
-      elements.diagnosisButton,
-      elements.recommendButton,
-    ].forEach((button) => {
-      button.disabled = isBusy;
-    });
-
     if (message) setStatus(message);
     syncControls();
   }
 
   function syncControls() {
-    const isLoggedIn = Boolean(state.token);
     const hasSavedPrediction = Boolean(state.predictionId);
     const hasPreviewFile = Boolean(elements.imageInput.files[0]);
 
-    elements.authStatus.textContent = isLoggedIn
-      ? `${state.user?.name || state.user?.id || "사용자"} 로그인`
-      : "비로그인";
-
-    elements.logoutButton.disabled = state.busy || !isLoggedIn;
+    elements.surveyButton.disabled = state.busy;
     elements.analyzeButton.disabled = state.busy || !hasPreviewFile;
-    elements.historyButton.disabled = state.busy || !isLoggedIn;
-    elements.diagnosisButton.disabled = state.busy || !isLoggedIn || !hasSavedPrediction;
-    elements.recommendButton.disabled = state.busy || !isLoggedIn || !hasSavedPrediction;
+    elements.historyButton.disabled = state.busy;
+    elements.diagnosisButton.disabled = state.busy || !hasSavedPrediction;
+    elements.recommendButton.disabled = state.busy || !hasSavedPrediction;
   }
 
   function requestHeaders(json = true) {
-    const headers = {};
-    if (json) headers["Content-Type"] = "application/json";
-    if (state.token) headers.Authorization = `Bearer ${state.token}`;
-    return headers;
+    return json ? { "Content-Type": "application/json" } : {};
   }
 
   async function readResponse(response) {
     const contentType = response.headers.get("content-type") || "";
-    if (contentType.includes("application/json")) {
-      return response.json();
-    }
+    if (contentType.includes("application/json")) return response.json();
     return response.text();
   }
 
@@ -126,10 +88,7 @@
       },
     });
     const data = await readResponse(response);
-
-    if (!response.ok) {
-      throw new Error(extractError(data, response.status));
-    }
+    if (!response.ok) throw new Error(extractError(data, response.status));
     return data;
   }
 
@@ -180,7 +139,7 @@
     ].join("");
 
     elements.markedImage.innerHTML = data.marked_image_url
-      ? `<img src="${escapeHtml(data.marked_image_url)}" alt="랜드마크 이미지" style="width:100%;border-radius:8px;border:1px solid var(--line)">`
+      ? `<img src="${escapeHtml(data.marked_image_url)}" alt="피부 랜드마크 이미지">`
       : "";
 
     elements.diagnosisText.textContent = "";
@@ -189,60 +148,10 @@
   }
 
   function renderEmptyPanels() {
-    elements.metrics.innerHTML = `<div class="empty-state" style="grid-column:1/-1">이미지를 분석하면 주요 지표가 여기에 표시됩니다.</div>`;
-    elements.historyList.innerHTML = state.token
-      ? `<div class="empty-state">저장된 진단 이력이 없습니다.</div>`
-      : `<div class="empty-state">로그인하면 진단 이력을 불러올 수 있습니다.</div>`;
+    elements.metrics.innerHTML = `<div class="empty-state" style="grid-column:1/-1">이미지를 분석하면 피부 타입, 수분, 모공, 색소침착 지표가 표시됩니다.</div>`;
+    elements.historyList.innerHTML = `<div class="empty-state">분석 결과가 아직 없습니다. 이미지를 분석하면 이 브라우저 세션에 저장됩니다.</div>`;
     elements.diagnosisText.textContent = "";
-    elements.productList.innerHTML = `<div class="empty-state">로그인 후 저장된 분석 결과를 선택하면 추천을 받을 수 있습니다.</div>`;
-  }
-
-  async function login() {
-    const id = elements.loginId.value.trim();
-    const password = elements.loginPassword.value;
-    if (!id || !password) {
-      setStatus("아이디와 비밀번호를 입력하세요.", "error");
-      return;
-    }
-
-    setBusy(true, "로그인 중입니다.");
-    try {
-      const data = await api("/api/accounts/login/", {
-        method: "POST",
-        body: JSON.stringify({ id, password }),
-      });
-
-      state.token = data.access;
-      state.refresh = data.refresh;
-      state.user = data.user || null;
-      localStorage.setItem(storageKeys.accessToken, state.token);
-      localStorage.setItem(storageKeys.refreshToken, state.refresh);
-      localStorage.setItem(storageKeys.user, JSON.stringify(state.user));
-
-      elements.loginPassword.value = "";
-      setStatus(`${state.user?.name || state.user?.id || "사용자"}님, 로그인했습니다.`, "success");
-      await loadSurvey();
-      await loadHistory({ selectLatest: true });
-    } catch (error) {
-      clearAuth();
-      setStatus(error.message, "error");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  function clearAuth() {
-    state.token = "";
-    state.refresh = "";
-    state.user = null;
-    state.predictionId = null;
-    state.prediction = null;
-    localStorage.removeItem(storageKeys.accessToken);
-    localStorage.removeItem(storageKeys.refreshToken);
-    localStorage.removeItem(storageKeys.user);
-    localStorage.removeItem(storageKeys.selectedPredictionId);
-    renderEmptyPanels();
-    syncControls();
+    elements.productList.innerHTML = `<div class="empty-state">분석 결과와 설문을 저장하면 추천 화장품을 확인할 수 있습니다.</div>`;
   }
 
   async function saveSurvey() {
@@ -253,9 +162,8 @@
         acne_level: Number(elements.acne.value),
         sensitivity_level: Number(elements.sensitivity.value),
       };
-      const targetSurveyId = state.token ? state.user?.id : state.surveyId;
-      const data = targetSurveyId
-        ? await api(`/api/surveys/${encodeURIComponent(targetSurveyId)}/`, {
+      const data = state.surveyId
+        ? await api(`/api/surveys/${encodeURIComponent(state.surveyId)}/`, {
           method: "PUT",
           body: JSON.stringify(payload),
         })
@@ -274,35 +182,6 @@
     }
   }
 
-  async function loadSurvey() {
-    if (!state.token) return;
-
-    try {
-      const surveys = await api("/api/surveys/", {
-        method: "GET",
-        json: false,
-      });
-      const survey = Array.isArray(surveys) ? surveys[0] : null;
-      if (!survey) return;
-
-      state.surveyId = survey.user || String(survey.id);
-      localStorage.setItem(storageKeys.surveyId, state.surveyId);
-      elements.atopy.value = toSurveyScale(survey.atopy_level);
-      elements.acne.value = toSurveyScale(survey.acne_level);
-      elements.sensitivity.value = toSurveyScale(survey.sensitivity_level);
-    } catch {
-      state.surveyId = "";
-      localStorage.removeItem(storageKeys.surveyId);
-    }
-  }
-
-  function toSurveyScale(value) {
-    const number = Number(value);
-    if ([1, 2, 3, 4, 5].includes(number)) return String(number);
-    if (number > 0 && number <= 1) return String(Math.round(number * 5));
-    return "3";
-  }
-
   async function analyze() {
     const file = elements.imageInput.files[0];
     if (!file) {
@@ -313,7 +192,7 @@
     const body = new FormData();
     body.append("image", file);
 
-    setBusy(true, "피부 분석을 실행 중입니다. 모델 로딩 때문에 처음에는 조금 걸릴 수 있습니다.");
+    setBusy(true, "피부 분석을 실행 중입니다. 첫 분석은 모델 로딩 때문에 조금 걸릴 수 있습니다.");
     try {
       const data = await api("/api/diagnostics/", {
         method: "POST",
@@ -321,8 +200,8 @@
         body,
       });
       renderPrediction(data);
-      setStatus(data.id ? "분석 결과가 저장됐습니다." : "비로그인 분석이 완료됐습니다. 저장/추천은 로그인 후 사용할 수 있습니다.", "success");
-      if (state.token) await loadHistory({ keepSelection: true });
+      setStatus("분석 결과가 현재 브라우저 세션에 저장됐습니다.", "success");
+      await loadHistory({ keepSelection: true });
     } catch (error) {
       setStatus(error.message, "error");
     } finally {
@@ -331,12 +210,6 @@
   }
 
   async function loadHistory(options = {}) {
-    if (!state.token) {
-      elements.historyList.innerHTML = `<div class="empty-state">로그인하면 진단 이력을 불러올 수 있습니다.</div>`;
-      syncControls();
-      return;
-    }
-
     setBusy(true, "진단 이력을 불러오는 중입니다.");
     try {
       const data = await api("/api/diagnostics/history/", {
@@ -344,14 +217,15 @@
         json: false,
       });
 
-      if (options.selectLatest && data[0]?.id) {
+      state.history = data;
+      if (!options.keepSelection && data[0]?.id) {
         state.predictionId = Number(data[0].id);
         state.prediction = data[0];
         localStorage.setItem(storageKeys.selectedPredictionId, String(state.predictionId));
       }
 
       renderHistory(data);
-      if (state.prediction && options.selectLatest) renderPrediction(state.prediction);
+      if (state.prediction && !options.keepSelection) renderPrediction(state.prediction);
       setStatus(data.length ? "진단 이력을 불러왔습니다." : "아직 저장된 진단 이력이 없습니다.", "success");
     } catch (error) {
       setStatus(error.message, "error");
@@ -393,23 +267,19 @@
   }
 
   async function generateDiagnosis() {
-    if (!state.token) {
-      setStatus("AI 진단은 로그인 후 저장된 분석 결과에서 사용할 수 있습니다.", "error");
-      return;
-    }
     if (!state.predictionId) {
-      setStatus("AI 진단에 사용할 분석 결과를 선택하세요.", "error");
+      setStatus("AI 코멘트에 사용할 분석 결과를 선택하세요.", "error");
       return;
     }
 
-    setBusy(true, "AI 진단을 생성 중입니다.");
+    setBusy(true, "AI 코멘트를 생성 중입니다.");
     try {
       const data = await api("/api/generate/", {
         method: "POST",
         body: JSON.stringify({ prediction_id: state.predictionId }),
       });
-      elements.diagnosisText.textContent = data.diagnosis_text || "진단 결과가 비어 있습니다.";
-      setStatus("AI 진단이 준비됐습니다.", "success");
+      elements.diagnosisText.textContent = data.diagnosis_text || "코멘트 결과가 비어 있습니다.";
+      setStatus("AI 코멘트가 준비됐습니다.", "success");
       document.querySelector("#recommendations")?.scrollIntoView({ behavior: "smooth", block: "start" });
     } catch (error) {
       setStatus(error.message, "error");
@@ -419,20 +289,24 @@
   }
 
   async function recommend() {
-    if (!state.token) {
-      setStatus("제품 추천은 로그인 후 저장된 분석 결과에서 사용할 수 있습니다.", "error");
-      return;
-    }
     if (!state.predictionId) {
       setStatus("추천에 사용할 분석 결과를 선택하세요.", "error");
       return;
+    }
+
+    if (!state.surveyId) {
+      await saveSurvey();
+      if (!state.surveyId) return;
     }
 
     setBusy(true, "제품 추천을 계산 중입니다.");
     try {
       const data = await api("/api/recommendations_data/", {
         method: "POST",
-        body: JSON.stringify({ prediction_id: state.predictionId }),
+        body: JSON.stringify({
+          prediction_id: state.predictionId,
+          survey_id: state.surveyId,
+        }),
       });
       renderProducts(data.recommended_data || []);
       setStatus("추천이 완료됐습니다.", "success");
@@ -484,7 +358,7 @@
     ["dragenter", "dragover"].forEach((eventName) => {
       elements.dropZone.addEventListener(eventName, (event) => {
         event.preventDefault();
-        elements.dropZone.style.borderColor = "var(--accent)";
+        elements.dropZone.style.borderColor = "var(--teal)";
       });
     });
 
@@ -516,12 +390,7 @@
 
   function cacheElements() {
     Object.assign(elements, {
-      authStatus: $("auth-status"),
       status: $("status"),
-      loginId: $("login-id"),
-      loginPassword: $("login-password"),
-      loginButton: $("login-button"),
-      logoutButton: $("logout-button"),
       surveyButton: $("survey-button"),
       analyzeButton: $("analyze-button"),
       historyButton: $("history-button"),
@@ -543,14 +412,6 @@
   }
 
   function bindActions() {
-    elements.loginButton.addEventListener("click", login);
-    elements.loginPassword.addEventListener("keydown", (event) => {
-      if (event.key === "Enter") login();
-    });
-    elements.logoutButton.addEventListener("click", () => {
-      clearAuth();
-      setStatus("로그아웃했습니다.", "success");
-    });
     elements.surveyButton.addEventListener("click", saveSurvey);
     elements.analyzeButton.addEventListener("click", analyze);
     elements.historyButton.addEventListener("click", () => loadHistory({ keepSelection: true }));
@@ -565,15 +426,7 @@
     bindNavigation();
     renderEmptyPanels();
     syncControls();
-
-    if (state.token) {
-      Promise.all([
-        loadSurvey(),
-        loadHistory({ selectLatest: !state.predictionId }),
-      ]).catch((error) => {
-        setStatus(error.message, "error");
-      });
-    }
+    loadHistory().catch((error) => setStatus(error.message, "error"));
   }
 
   document.addEventListener("DOMContentLoaded", init);
