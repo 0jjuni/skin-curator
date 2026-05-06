@@ -1,0 +1,688 @@
+{% load static %}
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Skin Care Lab</title>
+  <style>
+    :root {
+      --ink: #18201f;
+      --muted: #60706d;
+      --line: #dbe5df;
+      --panel: #ffffff;
+      --panel-soft: #f5f8f6;
+      --accent: #27715f;
+      --accent-strong: #174d42;
+      --warn: #ad5a2a;
+      --rose: #c7566b;
+      --blue: #47778d;
+      --shadow: 0 18px 48px rgba(22, 43, 38, .12);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: #eef4f0;
+      font-family: Inter, Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    button, input, select { font: inherit; }
+
+    .shell {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 280px 1fr;
+    }
+
+    aside {
+      min-height: 100vh;
+      padding: 28px 22px;
+      background: #10231f;
+      color: #edf7f2;
+      position: sticky;
+      top: 0;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 32px;
+    }
+
+    .brand-mark {
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      background: #dff2e9;
+      color: #174d42;
+      border-radius: 8px;
+      font-weight: 800;
+    }
+
+    .brand strong { display: block; font-size: 18px; }
+    .brand span { color: #a9c9be; font-size: 13px; }
+
+    nav {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 28px;
+    }
+
+    nav a {
+      color: #d8e9e2;
+      text-decoration: none;
+      padding: 11px 12px;
+      border-radius: 6px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    nav a.active, nav a:hover { background: rgba(255,255,255,.09); }
+
+    .side-panel {
+      border-top: 1px solid rgba(255,255,255,.14);
+      padding-top: 22px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .side-panel label,
+    .field label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0;
+    }
+
+    aside .side-panel label { color: #b5d0c6; }
+
+    .side-panel input,
+    .field input,
+    .field select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 11px 12px;
+      background: #fff;
+      color: var(--ink);
+    }
+
+    .side-panel input {
+      border-color: rgba(255,255,255,.18);
+      background: rgba(255,255,255,.08);
+      color: #fff;
+    }
+
+    .main {
+      padding: 28px;
+      display: grid;
+      gap: 22px;
+      align-content: start;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 30px;
+      line-height: 1.15;
+      letter-spacing: 0;
+    }
+
+    .topbar p {
+      margin: 6px 0 0;
+      color: var(--muted);
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      border: 0;
+      border-radius: 6px;
+      padding: 11px 14px;
+      color: white;
+      background: var(--accent);
+      cursor: pointer;
+      min-height: 42px;
+    }
+
+    .btn.secondary {
+      color: var(--accent-strong);
+      background: #dcefe7;
+    }
+
+    .btn.ghost {
+      color: var(--ink);
+      background: #fff;
+      border: 1px solid var(--line);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(320px, .85fr) minmax(360px, 1.15fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    section {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .section-head {
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 17px;
+      letter-spacing: 0;
+    }
+
+    .content {
+      padding: 20px;
+      display: grid;
+      gap: 16px;
+    }
+
+    .upload-zone {
+      min-height: 280px;
+      border: 1px dashed #a9bbb5;
+      border-radius: 8px;
+      background: #f8fbf9;
+      display: grid;
+      place-items: center;
+      padding: 18px;
+      text-align: center;
+      cursor: pointer;
+    }
+
+    .upload-zone img {
+      max-width: 100%;
+      max-height: 260px;
+      border-radius: 8px;
+      object-fit: contain;
+    }
+
+    .upload-zone strong { display: block; margin-bottom: 6px; }
+    .upload-zone span { color: var(--muted); font-size: 14px; }
+    .hidden { display: none; }
+
+    .survey-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .metric {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+      background: var(--panel-soft);
+      min-height: 96px;
+    }
+
+    .metric span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .metric strong {
+      display: block;
+      margin-top: 7px;
+      font-size: 19px;
+    }
+
+    .bar {
+      height: 7px;
+      border-radius: 999px;
+      background: #d9e5df;
+      margin-top: 12px;
+      overflow: hidden;
+    }
+
+    .bar i {
+      display: block;
+      height: 100%;
+      width: var(--value, 0%);
+      background: var(--accent);
+    }
+
+    .wide {
+      grid-column: 1 / -1;
+    }
+
+    .history-list,
+    .product-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .list-item {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 13px 14px;
+      background: #fff;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .list-item small { color: var(--muted); }
+
+    .product {
+      align-items: start;
+    }
+
+    .product img {
+      width: 48px;
+      height: 48px;
+      object-fit: cover;
+      border-radius: 6px;
+      border: 1px solid var(--line);
+      background: #f7faf8;
+    }
+
+    .product-main {
+      display: grid;
+      gap: 3px;
+      flex: 1;
+    }
+
+    .price {
+      font-weight: 800;
+      color: var(--accent-strong);
+      white-space: nowrap;
+    }
+
+    .status {
+      min-height: 22px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .diagnosis-text {
+      line-height: 1.7;
+      white-space: pre-wrap;
+      color: #263331;
+    }
+
+    @media (max-width: 980px) {
+      .shell { grid-template-columns: 1fr; }
+      aside { min-height: auto; position: static; }
+      .grid { grid-template-columns: 1fr; }
+      .topbar { align-items: flex-start; flex-direction: column; }
+    }
+
+    @media (max-width: 620px) {
+      .main { padding: 18px; }
+      .metric-grid,
+      .survey-grid { grid-template-columns: 1fr; }
+      h1 { font-size: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside>
+      <div class="brand">
+        <div class="brand-mark">SL</div>
+        <div>
+          <strong>Skin Lab</strong>
+          <span>diagnosis workspace</span>
+        </div>
+      </div>
+      <nav aria-label="primary">
+        <a class="active" href="#analysis">⌁ 분석</a>
+        <a href="#history">◴ 이력</a>
+        <a href="#recommendations">◈ 추천</a>
+        <a href="/swagger/">▣ API</a>
+      </nav>
+      <div class="side-panel">
+        <label for="login-id">아이디</label>
+        <input id="login-id" autocomplete="username" placeholder="user01">
+        <label for="login-password">비밀번호</label>
+        <input id="login-password" autocomplete="current-password" type="password" placeholder="password">
+        <button class="btn" id="login-button" type="button">로그인</button>
+        <button class="btn secondary" id="logout-button" type="button">토큰 초기화</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="topbar">
+        <div>
+          <h1>피부 분석과 제품 추천을 한 화면에서</h1>
+          <p>이미지 진단, 설문, LLM 코멘트, 추천 API를 연결했습니다.</p>
+        </div>
+        <div class="actions">
+          <button class="btn ghost" id="history-button" type="button">이력 새로고침</button>
+          <button class="btn secondary" id="docs-button" type="button">문서 열기</button>
+        </div>
+      </div>
+
+      <div class="grid" id="analysis">
+        <section>
+          <div class="section-head">
+            <h2>분석 입력</h2>
+            <span class="status" id="auth-status">비로그인</span>
+          </div>
+          <div class="content">
+            <label class="upload-zone" for="image-input" id="drop-zone">
+              <input class="hidden" id="image-input" type="file" accept="image/*">
+              <span id="preview-empty">
+                <strong>얼굴 이미지를 선택하세요</strong>
+                <span>JPG, PNG 파일</span>
+              </span>
+              <img class="hidden" id="preview" alt="선택한 이미지 미리보기">
+            </label>
+            <div class="survey-grid">
+              <div class="field">
+                <label for="atopy">아토피</label>
+                <select id="atopy">
+                  <option value="1">1</option><option value="2">2</option><option value="3" selected>3</option><option value="4">4</option><option value="5">5</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="acne">여드름</label>
+                <select id="acne">
+                  <option value="1">1</option><option value="2">2</option><option value="3" selected>3</option><option value="4">4</option><option value="5">5</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="sensitivity">민감성</label>
+                <select id="sensitivity">
+                  <option value="1">1</option><option value="2">2</option><option value="3" selected>3</option><option value="4">4</option><option value="5">5</option>
+                </select>
+              </div>
+            </div>
+            <div class="actions">
+              <button class="btn" id="analyze-button" type="button">분석 시작</button>
+              <button class="btn secondary" id="survey-button" type="button">설문 저장</button>
+            </div>
+            <div class="status" id="status"></div>
+          </div>
+        </section>
+
+        <section>
+          <div class="section-head">
+            <h2>분석 결과</h2>
+            <button class="btn ghost" id="diagnosis-button" type="button">AI 진단</button>
+          </div>
+          <div class="content">
+            <div class="metric-grid" id="metrics"></div>
+            <div id="marked-image"></div>
+          </div>
+        </section>
+
+        <section class="wide" id="history">
+          <div class="section-head">
+            <h2>진단 이력</h2>
+            <button class="btn ghost" id="recommend-button" type="button">추천 받기</button>
+          </div>
+          <div class="content">
+            <div class="history-list" id="history-list"></div>
+          </div>
+        </section>
+
+        <section class="wide" id="recommendations">
+          <div class="section-head">
+            <h2>추천과 코멘트</h2>
+          </div>
+          <div class="content">
+            <div class="diagnosis-text" id="diagnosis-text"></div>
+            <div class="product-list" id="product-list"></div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const state = {
+      token: localStorage.getItem("skin_access_token") || "",
+      predictionId: null,
+      surveyId: localStorage.getItem("skin_survey_id") || "",
+    };
+
+    const labels = {
+      skinType: ["건성", "중성", "지성"],
+      severity3: ["낮음", "보통", "높음"],
+      moisture: ["부족", "충분"],
+      lips: ["양호", "보통", "건조"],
+    };
+
+    const $ = (id) => document.getElementById(id);
+    const status = (message) => $("status").textContent = message || "";
+
+    function headers(json = true) {
+      const result = {};
+      if (json) result["Content-Type"] = "application/json";
+      if (state.token) result.Authorization = `Bearer ${state.token}`;
+      return result;
+    }
+
+    function updateAuthStatus() {
+      $("auth-status").textContent = state.token ? "로그인됨" : "비로그인";
+    }
+
+    function metric(title, value, probability) {
+      const percent = Math.round((probability || 0) * 100);
+      return `
+        <div class="metric">
+          <span>${title}</span>
+          <strong>${value}</strong>
+          <div class="bar"><i style="--value:${percent}%"></i></div>
+        </div>
+      `;
+    }
+
+    function topProbability(values) {
+      if (!Array.isArray(values) || values.length === 0) return 0;
+      return Math.max(...values);
+    }
+
+    function renderPrediction(data) {
+      state.predictionId = data.id || state.predictionId;
+      $("metrics").innerHTML = [
+        metric("피부 타입", labels.skinType[data.skin_type_prediction] || "-", topProbability(data.skin_type_probabilities)),
+        metric("색소 침착", labels.severity3[data.forehead_pigmentation_prediction] || "-", topProbability(data.forehead_pigmentation_probabilities)),
+        metric("왼쪽 모공", labels.severity3[data.left_cheek_pore_prediction] || "-", topProbability(data.left_cheek_pore_probabilities)),
+        metric("오른쪽 모공", labels.severity3[data.right_cheek_pore_prediction] || "-", topProbability(data.right_cheek_pore_probabilities)),
+        metric("이마 수분", labels.moisture[data.forehead_moisture_prediction] || "-", topProbability(data.forehead_moisture_probabilities)),
+        metric("입술 건조", labels.lips[data.lips_dryness_prediction] || "-", topProbability(data.lips_dryness_probabilities)),
+      ].join("");
+
+      if (data.marked_image_url) {
+        $("marked-image").innerHTML = `<img src="${data.marked_image_url}" alt="랜드마크 이미지" style="width:100%;border-radius:8px;border:1px solid var(--line)">`;
+      }
+    }
+
+    async function login() {
+      status("로그인 중입니다.");
+      const response = await fetch("/api/accounts/login/", {
+        method: "POST",
+        headers: headers(),
+        body: JSON.stringify({ id: $("login-id").value, password: $("login-password").value }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.detail || "로그인 실패");
+      state.token = data.access;
+      localStorage.setItem("skin_access_token", state.token);
+      updateAuthStatus();
+      status(`${data.user?.name || data.user?.id || "사용자"}님으로 로그인했습니다.`);
+      loadHistory();
+    }
+
+    async function saveSurvey() {
+      status("설문을 저장 중입니다.");
+      const response = await fetch("/api/surveys/", {
+        method: "POST",
+        headers: headers(),
+        body: JSON.stringify({
+          atopy_level: Number($("atopy").value),
+          acne_level: Number($("acne").value),
+          sensitivity_level: Number($("sensitivity").value),
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.detail || data.non_field_errors?.[0] || "설문 저장 실패");
+      state.surveyId = data.user || String(data.id);
+      localStorage.setItem("skin_survey_id", state.surveyId);
+      status("설문이 저장됐습니다.");
+    }
+
+    async function analyze() {
+      const file = $("image-input").files[0];
+      if (!file) {
+        status("이미지를 먼저 선택하세요.");
+        return;
+      }
+      status("피부 분석을 실행 중입니다.");
+      const body = new FormData();
+      body.append("image", file);
+      const response = await fetch("/api/diagnostics/", {
+        method: "POST",
+        headers: headers(false),
+        body,
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "분석 실패");
+      renderPrediction(data);
+      status("분석이 완료됐습니다.");
+      if (state.token) loadHistory();
+    }
+
+    async function loadHistory() {
+      if (!state.token) {
+        $("history-list").innerHTML = `<div class="status">로그인 후 이력을 볼 수 있습니다.</div>`;
+        return;
+      }
+      const response = await fetch("/api/diagnostics/history/", { headers: headers(false) });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.detail || "이력 조회 실패");
+      $("history-list").innerHTML = data.length
+        ? data.map((item) => `
+          <button class="list-item" type="button" data-id="${item.id}">
+            <span><strong>${labels.skinType[item.skin_type_prediction] || "분석"}</strong><br><small>${item.created_at || ""}</small></span>
+            <span>${labels.lips[item.lips_dryness_prediction] || "-"}</span>
+          </button>
+        `).join("")
+        : `<div class="status">저장된 이력이 없습니다.</div>`;
+
+      document.querySelectorAll("[data-id]").forEach((button) => {
+        button.addEventListener("click", () => {
+          state.predictionId = Number(button.dataset.id);
+          status(`선택된 진단 ID: ${state.predictionId}`);
+        });
+      });
+    }
+
+    async function generateDiagnosis() {
+      if (!state.predictionId) {
+        status("저장된 분석 결과를 선택하세요.");
+        return;
+      }
+      status("AI 진단을 생성 중입니다.");
+      const response = await fetch("/api/generate/", {
+        method: "POST",
+        headers: headers(),
+        body: JSON.stringify({ prediction_id: state.predictionId }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "AI 진단 실패");
+      $("diagnosis-text").textContent = data.diagnosis_text || "";
+      status("AI 진단이 준비됐습니다.");
+    }
+
+    async function recommend() {
+      if (!state.predictionId) {
+        status("추천에 사용할 분석 결과를 선택하세요.");
+        return;
+      }
+      const payload = { prediction_id: state.predictionId };
+      if (!state.token) payload.survey_id = state.surveyId;
+      status("제품 추천을 계산 중입니다.");
+      const response = await fetch("/api/recommendations_data/", {
+        method: "POST",
+        headers: headers(),
+        body: JSON.stringify(payload),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.detail || "추천 실패");
+      const products = data.recommended_data || [];
+      $("product-list").innerHTML = products.length
+        ? products.map((item) => `
+          <div class="list-item product">
+            <img src="${item.logo}" alt="">
+            <span class="product-main">
+              <strong>${item.brand}</strong>
+              <span>${item.title}</span>
+              <small>${item.category || ""} ${item.etc || ""}</small>
+            </span>
+            <span class="price">${Number(item.price || 0).toLocaleString()}원</span>
+          </div>
+        `).join("")
+        : `<div class="status">추천할 제품 데이터가 없습니다.</div>`;
+      status("추천이 완료됐습니다.");
+    }
+
+    function bind() {
+      updateAuthStatus();
+      $("login-button").addEventListener("click", () => login().catch((error) => status(error.message)));
+      $("logout-button").addEventListener("click", () => {
+        state.token = "";
+        localStorage.removeItem("skin_access_token");
+        updateAuthStatus();
+        status("토큰을 초기화했습니다.");
+      });
+      $("survey-button").addEventListener("click", () => saveSurvey().catch((error) => status(error.message)));
+      $("analyze-button").addEventListener("click", () => analyze().catch((error) => status(error.message)));
+      $("history-button").addEventListener("click", () => loadHistory().catch((error) => status(error.message)));
+      $("diagnosis-button").addEventListener("click", () => generateDiagnosis().catch((error) => status(error.message)));
+      $("recommend-button").addEventListener("click", () => recommend().catch((error) => status(error.message)));
+      $("docs-button").addEventListener("click", () => location.href = "/redoc/");
+      $("image-input").addEventListener("change", (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+        $("preview").src = URL.createObjectURL(file);
+        $("preview").classList.remove("hidden");
+        $("preview-empty").classList.add("hidden");
+      });
+      loadHistory().catch(() => {});
+    }
+
+    bind();
+  </script>
+</body>
+</html>
