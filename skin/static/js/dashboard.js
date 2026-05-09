@@ -1,7 +1,6 @@
 (() => {
   const storageKeys = {
     surveyId: "skin_survey_id",
-    selectedPredictionId: "skin_prediction_id",
     ageGroup: "skin_age_group",
   };
 
@@ -14,7 +13,7 @@
 
   const state = {
     surveyId: localStorage.getItem(storageKeys.surveyId) || "",
-    predictionId: Number(localStorage.getItem(storageKeys.selectedPredictionId)) || null,
+    predictionId: null,
     prediction: null,
     history: [],
     busy: false,
@@ -53,6 +52,15 @@
   function setStatus(message = "", tone = "info") {
     elements.status.textContent = message;
     elements.status.className = `status ${tone === "error" ? "error" : tone === "success" ? "success" : ""}`.trim();
+  }
+
+  function getRadioValue(name) {
+    return document.querySelector(`input[name="${name}"]:checked`)?.value || "";
+  }
+
+  function setRadioValue(name, value) {
+    const input = document.querySelector(`input[name="${name}"][value="${value}"]`);
+    if (input) input.checked = true;
   }
 
   function setBusy(isBusy, message) {
@@ -151,7 +159,6 @@
     state.prediction = data;
     if (data.id) {
       state.predictionId = Number(data.id);
-      localStorage.setItem(storageKeys.selectedPredictionId, String(state.predictionId));
     }
 
     elements.metrics.innerHTML = [
@@ -175,19 +182,35 @@
 
   function renderEmptyPanels() {
     elements.metrics.innerHTML = `<div class="empty-state" style="grid-column:1/-1">이미지를 분석하면 피부 타입, 수분, 모공, 색소침착 지표가 표시됩니다.</div>`;
-    elements.historyList.innerHTML = `<div class="empty-state">분석 결과가 아직 없습니다. 이미지를 분석하면 이 브라우저 세션에 저장됩니다.</div>`;
+    elements.historyList.innerHTML = `<div class="empty-state">분석 결과가 아직 없습니다. 이미지를 분석하면 이력에 표시됩니다.</div>`;
     elements.diagnosisText.textContent = "";
     elements.productList.innerHTML = `<div class="empty-state">분석 결과와 설문을 저장하면 추천 화장품을 확인할 수 있습니다.</div>`;
     setStage("upload");
+  }
+
+  function clearCurrentAnalysis(message = "") {
+    state.prediction = null;
+    state.predictionId = null;
+    elements.imageInput.value = "";
+    elements.preview.removeAttribute("src");
+    elements.preview.classList.add("hidden");
+    elements.previewEmpty.classList.remove("hidden");
+    elements.markedImage.innerHTML = "";
+    elements.diagnosisText.textContent = "";
+    elements.metrics.innerHTML = `<div class="empty-state" style="grid-column:1/-1">이미지를 분석하면 피부 타입, 수분, 모공, 색소침착 지표가 표시됩니다.</div>`;
+    elements.productList.innerHTML = `<div class="empty-state">분석 결과와 설문을 저장하면 추천 화장품을 확인할 수 있습니다.</div>`;
+    setStage("upload");
+    if (message) setStatus(message, "success");
+    syncControls();
   }
 
   async function saveSurvey() {
     setBusy(true, "설문을 저장 중입니다.");
     try {
       const payload = {
-        atopy_level: Number(elements.atopy.value),
-        acne_level: Number(elements.acne.value),
-        sensitivity_level: Number(elements.sensitivity.value),
+        atopy_level: Number(getRadioValue("atopy")),
+        acne_level: Number(getRadioValue("acne")),
+        sensitivity_level: Number(getRadioValue("sensitivity")),
       };
       const data = state.surveyId
         ? await api(`/api/surveys/${encodeURIComponent(state.surveyId)}/`, {
@@ -202,8 +225,10 @@
       state.surveyId = data.user || String(data.id);
       localStorage.setItem(storageKeys.surveyId, state.surveyId);
       setStatus("설문이 저장됐습니다.", "success");
+      return true;
     } catch (error) {
       setStatus(error.message, "error");
+      return false;
     } finally {
       setBusy(false);
     }
@@ -251,14 +276,8 @@
       });
 
       state.history = data;
-      if (!options.keepSelection && data[0]?.id) {
-        state.predictionId = Number(data[0].id);
-        state.prediction = data[0];
-        localStorage.setItem(storageKeys.selectedPredictionId, String(state.predictionId));
-      }
 
       renderHistory(data);
-      if (state.prediction && !options.keepSelection) renderPrediction(state.prediction);
       if (!options.silent) {
         setStatus(data.length ? "진단 이력을 불러왔습니다." : "아직 저장된 진단 이력이 없습니다.", "success");
       }
@@ -339,12 +358,10 @@
       return;
     }
 
-    if (!state.surveyId) {
-      await saveSurvey();
-      if (!state.surveyId) return;
-    }
+    const saved = await saveSurvey();
+    if (!saved || !state.surveyId) return;
 
-    state.ageGroup = elements.ageGroup.value;
+    state.ageGroup = getRadioValue("age-group") || "twenties";
     localStorage.setItem(storageKeys.ageGroup, state.ageGroup);
     setStage("recommend");
     renderLoading(elements.productList, "화장품을 고르는 중입니다", "피부 분석값과 설문 응답을 비교해서 잘 맞는 제품을 추려내고 있습니다.");
@@ -457,10 +474,6 @@
       preview: $("preview"),
       previewEmpty: $("preview-empty"),
       dropZone: $("drop-zone"),
-      atopy: $("atopy"),
-      acne: $("acne"),
-      sensitivity: $("sensitivity"),
-      ageGroup: $("age-group"),
       metrics: $("metrics"),
       markedImage: $("marked-image"),
       historyList: $("history-list"),
@@ -473,13 +486,37 @@
   function bindActions() {
     elements.surveyButton.addEventListener("click", saveSurvey);
     elements.analyzeButton.addEventListener("click", analyze);
-    elements.historyButton.addEventListener("click", () => loadHistory({ keepSelection: true }));
+    elements.historyButton.addEventListener("click", async () => {
+      clearCurrentAnalysis();
+      await loadHistory({ keepSelection: true });
+    });
     elements.diagnosisButton.addEventListener("click", generateDiagnosis);
     elements.recommendButton.addEventListener("click", recommend);
-    elements.ageGroup.addEventListener("change", () => {
-      state.ageGroup = elements.ageGroup.value;
-      localStorage.setItem(storageKeys.ageGroup, state.ageGroup);
+    document.querySelectorAll('input[name="age-group"]').forEach((input) => {
+      input.addEventListener("change", () => {
+        state.ageGroup = getRadioValue("age-group") || "twenties";
+        localStorage.setItem(storageKeys.ageGroup, state.ageGroup);
+      });
     });
+    document.querySelectorAll('input[name="atopy"], input[name="acne"], input[name="sensitivity"]').forEach((input) => {
+      input.addEventListener("change", () => {
+        if (!state.surveyId) return;
+        setStatus("설문 값이 바뀌었습니다. 추천 전에 저장됩니다.");
+      });
+    });
+  }
+
+  async function refreshHistoryOnStart() {
+    try {
+      await loadHistory({ keepSelection: true, silent: true });
+      setStatus(state.history.length ? "저장된 진단 이력을 불러왔습니다." : "분석할 이미지를 업로드하세요.", state.history.length ? "success" : "info");
+    } catch (error) {
+      setStatus(error.message, "error");
+    }
+  }
+
+  function restorePreferences() {
+    setRadioValue("age-group", state.ageGroup);
   }
 
   function init() {
@@ -488,9 +525,9 @@
     bindUploadZone();
     bindNavigation();
     renderEmptyPanels();
-    elements.ageGroup.value = state.ageGroup;
+    restorePreferences();
     syncControls();
-    loadHistory().catch((error) => setStatus(error.message, "error"));
+    refreshHistoryOnStart();
   }
 
   document.addEventListener("DOMContentLoaded", init);

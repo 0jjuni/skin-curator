@@ -148,12 +148,15 @@
     }
 
     .hero {
-      min-height: 310px;
+      min-height: 280px;
       border-radius: var(--radius);
       overflow: hidden;
       display: grid;
-      grid-template-columns: minmax(0, 1.05fr) minmax(360px, .95fr);
-      background: var(--surface);
+      background:
+        linear-gradient(90deg, rgba(255,255,255,.95), rgba(255,255,255,.72), rgba(255,255,255,.34)),
+        url("https://images.unsplash.com/photo-1616394584738-fc6e612e71b9?auto=format&fit=crop&w=1400&q=80");
+      background-size: cover;
+      background-position: center;
       box-shadow: var(--shadow);
       border: 1px solid rgba(227, 231, 228, .9);
     }
@@ -188,42 +191,6 @@
       font-size: 16px;
       line-height: 1.65;
       max-width: 620px;
-    }
-
-    .hero-visual {
-      min-height: 310px;
-      background:
-        linear-gradient(90deg, rgba(255,255,255,.1), rgba(255,255,255,.62)),
-        url("https://images.unsplash.com/photo-1616394584738-fc6e612e71b9?auto=format&fit=crop&w=1200&q=80");
-      background-size: cover;
-      background-position: center;
-      position: relative;
-    }
-
-    .hero-badge {
-      position: absolute;
-      right: 24px;
-      bottom: 24px;
-      width: min(280px, calc(100% - 48px));
-      padding: 16px;
-      border-radius: var(--radius);
-      background: rgba(255, 255, 255, .88);
-      border: 1px solid rgba(255,255,255,.65);
-      box-shadow: 0 20px 55px rgba(31, 41, 38, .18);
-      backdrop-filter: blur(16px);
-    }
-
-    .hero-badge span {
-      display: block;
-      color: var(--muted);
-      font-size: 12px;
-      font-weight: 800;
-      margin-bottom: 6px;
-    }
-
-    .hero-badge strong {
-      display: block;
-      font-size: 22px;
     }
 
     .actions {
@@ -277,7 +244,7 @@
 
     .dashboard-grid {
       display: grid;
-      grid-template-columns: minmax(330px, .9fr) minmax(420px, 1.1fr);
+      grid-template-columns: minmax(0, 1fr);
       gap: 18px;
       align-items: start;
     }
@@ -433,10 +400,78 @@
 
     .hidden { display: none; }
 
-    .survey-grid {
+    .survey-form {
       display: grid;
+      gap: 14px;
+    }
+
+    .likert-row {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+      padding: 15px;
+      display: grid;
+      grid-template-columns: minmax(160px, .55fr) minmax(0, 1fr);
+      gap: 16px;
+      align-items: center;
+    }
+
+    .likert-question {
+      display: grid;
+      gap: 4px;
+    }
+
+    .likert-question strong {
+      font-size: 14px;
+    }
+
+    .likert-question span {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .likert-options {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .likert-options.age {
       grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 12px;
+    }
+
+    .likert-options input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .likert-options label {
+      min-height: 42px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface-2);
+      color: #34413f;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 800;
+      text-align: center;
+      transition: background .16s ease, border-color .16s ease, color .16s ease, transform .16s ease;
+    }
+
+    .likert-options label:hover {
+      border-color: rgba(18, 116, 100, .45);
+      transform: translateY(-1px);
+    }
+
+    .likert-options input:checked + label {
+      border-color: var(--teal);
+      background: #e8f5f1;
+      color: var(--teal-dark);
+      box-shadow: inset 0 0 0 1px rgba(18, 116, 100, .16);
     }
 
     .metric-grid {
@@ -678,17 +713,14 @@
         margin-left: auto;
         grid-auto-flow: column;
       }
-      .hero,
-      .dashboard-grid {
-        grid-template-columns: 1fr;
-      }
+      .dashboard-grid { grid-template-columns: 1fr; }
     }
 
     @media (max-width: 680px) {
       .main { padding: 16px; }
       .hero-copy { padding: 24px; }
       h1 { font-size: 30px; }
-      .survey-grid,
+      .survey-form,
       .metric-grid,
       .process-flow,
       nav {
@@ -696,6 +728,13 @@
         margin-left: 0;
       }
       .process-flow { grid-template-columns: 1fr; }
+      .likert-row {
+        grid-template-columns: 1fr;
+      }
+      .likert-options,
+      .likert-options.age {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
       .panel-head {
         align-items: flex-start;
         flex-direction: column;
@@ -733,16 +772,10 @@
             <button class="btn ghost" id="history-button" type="button">이력 새로고침</button>
           </div>
         </div>
-        <div class="hero-visual" aria-hidden="true">
-          <div class="hero-badge">
-            <span>Personal routine signal</span>
-            <strong id="session-status">세션 저장</strong>
-          </div>
-        </div>
       </section>
 
       <div class="dashboard-grid" id="analysis">
-        <section class="panel">
+        <section class="panel wide">
           <div class="panel-head">
             <div>
               <h2>피부 이미지 분석</h2>
@@ -760,45 +793,79 @@
               <img class="hidden" id="preview" alt="선택한 이미지 미리보기">
             </label>
 
-            <div class="survey-grid">
-              <div class="field">
-                <label for="age-group">연령대</label>
-                <select id="age-group">
-                  <option value="teens">10대</option>
-                  <option value="twenties" selected>20대</option>
-                  <option value="thirties">30대</option>
-                  <option value="forties_above">40대 이상</option>
-                </select>
+            <div class="survey-form" aria-label="피부 설문">
+              <div class="likert-row">
+                <div class="likert-question">
+                  <strong>연령대</strong>
+                  <span>추천 데이터의 연령대 선호를 함께 반영합니다.</span>
+                </div>
+                <div class="likert-options age">
+                  <input id="age-teens" name="age-group" type="radio" value="teens">
+                  <label for="age-teens">10대</label>
+                  <input id="age-twenties" name="age-group" type="radio" value="twenties" checked>
+                  <label for="age-twenties">20대</label>
+                  <input id="age-thirties" name="age-group" type="radio" value="thirties">
+                  <label for="age-thirties">30대</label>
+                  <input id="age-forties" name="age-group" type="radio" value="forties_above">
+                  <label for="age-forties">40대 이상</label>
+                </div>
               </div>
-              <div class="field">
-                <label for="atopy">아토피 민감도</label>
-                <select id="atopy">
-                  <option value="1">1 낮음</option>
-                  <option value="2">2</option>
-                  <option value="3" selected>3 보통</option>
-                  <option value="4">4</option>
-                  <option value="5">5 높음</option>
-                </select>
+
+              <div class="likert-row">
+                <div class="likert-question">
+                  <strong>아토피 민감도</strong>
+                  <span>낮음에서 높음까지 현재 체감 정도를 골라주세요.</span>
+                </div>
+                <div class="likert-options">
+                  <input id="atopy-1" name="atopy" type="radio" value="1">
+                  <label for="atopy-1">1 낮음</label>
+                  <input id="atopy-2" name="atopy" type="radio" value="2">
+                  <label for="atopy-2">2</label>
+                  <input id="atopy-3" name="atopy" type="radio" value="3" checked>
+                  <label for="atopy-3">3 보통</label>
+                  <input id="atopy-4" name="atopy" type="radio" value="4">
+                  <label for="atopy-4">4</label>
+                  <input id="atopy-5" name="atopy" type="radio" value="5">
+                  <label for="atopy-5">5 높음</label>
+                </div>
               </div>
-              <div class="field">
-                <label for="acne">트러블 정도</label>
-                <select id="acne">
-                  <option value="1">1 낮음</option>
-                  <option value="2">2</option>
-                  <option value="3" selected>3 보통</option>
-                  <option value="4">4</option>
-                  <option value="5">5 높음</option>
-                </select>
+
+              <div class="likert-row">
+                <div class="likert-question">
+                  <strong>트러블 정도</strong>
+                  <span>여드름이나 붉은 트러블 고민의 강도를 선택하세요.</span>
+                </div>
+                <div class="likert-options">
+                  <input id="acne-1" name="acne" type="radio" value="1">
+                  <label for="acne-1">1 낮음</label>
+                  <input id="acne-2" name="acne" type="radio" value="2">
+                  <label for="acne-2">2</label>
+                  <input id="acne-3" name="acne" type="radio" value="3" checked>
+                  <label for="acne-3">3 보통</label>
+                  <input id="acne-4" name="acne" type="radio" value="4">
+                  <label for="acne-4">4</label>
+                  <input id="acne-5" name="acne" type="radio" value="5">
+                  <label for="acne-5">5 높음</label>
+                </div>
               </div>
-              <div class="field">
-                <label for="sensitivity">피부 민감도</label>
-                <select id="sensitivity">
-                  <option value="1">1 낮음</option>
-                  <option value="2">2</option>
-                  <option value="3" selected>3 보통</option>
-                  <option value="4">4</option>
-                  <option value="5">5 높음</option>
-                </select>
+
+              <div class="likert-row">
+                <div class="likert-question">
+                  <strong>피부 민감도</strong>
+                  <span>자극에 쉽게 반응하는 정도를 기준으로 선택하세요.</span>
+                </div>
+                <div class="likert-options">
+                  <input id="sensitivity-1" name="sensitivity" type="radio" value="1">
+                  <label for="sensitivity-1">1 낮음</label>
+                  <input id="sensitivity-2" name="sensitivity" type="radio" value="2">
+                  <label for="sensitivity-2">2</label>
+                  <input id="sensitivity-3" name="sensitivity" type="radio" value="3" checked>
+                  <label for="sensitivity-3">3 보통</label>
+                  <input id="sensitivity-4" name="sensitivity" type="radio" value="4">
+                  <label for="sensitivity-4">4</label>
+                  <input id="sensitivity-5" name="sensitivity" type="radio" value="5">
+                  <label for="sensitivity-5">5 높음</label>
+                </div>
               </div>
             </div>
 
@@ -824,7 +891,7 @@
           </div>
         </section>
 
-        <section class="panel" id="analysis-result">
+        <section class="panel wide" id="analysis-result">
           <div class="panel-head">
             <div>
               <h2>분석 결과</h2>
@@ -869,6 +936,6 @@
     </main>
   </div>
 
-  <script src="{% static 'js/dashboard.js' %}?v=20260509-reco-match" defer></script>
+  <script src="{% static 'js/dashboard.js' %}?v=20260509-survey-flow" defer></script>
 </body>
 </html>

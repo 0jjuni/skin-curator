@@ -11,6 +11,9 @@ def home(request):
 
 urlpatterns = [
     path("", home, name="home"),
+    path("analysis/", home, name="analysis"),
+    path("history/", home, name="history"),
+    path("recommendations/", home, name="recommendations"),
     path("admin/", admin.site.urls),
     path("api/", include("diagnostics.urls")),
     path("api/", include("llm_diag.urls")),
