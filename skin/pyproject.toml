@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "skin-backend"
+name = "skin-curator"
 version = "0.1.0"
 description = ""
 authors = ["0jjuni <iyoung100009@gmail.com>"]
