@@ -2,6 +2,7 @@
   const storageKeys = {
     surveyId: "skin_survey_id",
     selectedPredictionId: "skin_prediction_id",
+    ageGroup: "skin_age_group",
   };
 
   const labels = {
@@ -17,6 +18,8 @@
     prediction: null,
     history: [],
     busy: false,
+    stage: "upload",
+    ageGroup: localStorage.getItem(storageKeys.ageGroup) || "twenties",
   };
 
   const elements = {};
@@ -56,6 +59,16 @@
     state.busy = isBusy;
     if (message) setStatus(message);
     syncControls();
+  }
+
+  function setStage(stage) {
+    state.stage = stage;
+    elements.flowSteps.forEach((step) => {
+      const order = ["upload", "analysis", "recommend"];
+      const stepStage = step.dataset.stage;
+      step.classList.toggle("active", stepStage === stage);
+      step.classList.toggle("done", order.indexOf(stepStage) < order.indexOf(stage));
+    });
   }
 
   function syncControls() {
@@ -122,6 +135,18 @@
     `;
   }
 
+  function renderLoading(target, title, message) {
+    target.innerHTML = `
+      <div class="loading-card">
+        <div>
+          <div class="spinner" aria-hidden="true"></div>
+          <strong>${escapeHtml(title)}</strong>
+          <p>${escapeHtml(message)}</p>
+        </div>
+      </div>
+    `;
+  }
+
   function renderPrediction(data) {
     state.prediction = data;
     if (data.id) {
@@ -144,6 +169,7 @@
 
     elements.diagnosisText.textContent = "";
     elements.productList.innerHTML = "";
+    setStage("analysis");
     syncControls();
   }
 
@@ -152,6 +178,7 @@
     elements.historyList.innerHTML = `<div class="empty-state">분석 결과가 아직 없습니다. 이미지를 분석하면 이 브라우저 세션에 저장됩니다.</div>`;
     elements.diagnosisText.textContent = "";
     elements.productList.innerHTML = `<div class="empty-state">분석 결과와 설문을 저장하면 추천 화장품을 확인할 수 있습니다.</div>`;
+    setStage("upload");
   }
 
   async function saveSurvey() {
@@ -192,7 +219,12 @@
     const body = new FormData();
     body.append("image", file);
 
+    setStage("analysis");
+    renderLoading(elements.metrics, "피부를 분석하는 중입니다", "얼굴 영역을 읽고 피부 타입, 모공, 수분, 색소침착 신호를 계산하고 있습니다.");
+    elements.markedImage.innerHTML = "";
+    elements.productList.innerHTML = "";
     setBusy(true, "피부 분석을 실행 중입니다. 첫 분석은 모델 로딩 때문에 조금 걸릴 수 있습니다.");
+    document.querySelector("#analysis-result")?.scrollIntoView({ behavior: "smooth", block: "start" });
     try {
       const data = await api("/api/diagnostics/", {
         method: "POST",
@@ -200,8 +232,9 @@
         body,
       });
       renderPrediction(data);
-      setStatus("분석 결과가 현재 브라우저 세션에 저장됐습니다.", "success");
-      await loadHistory({ keepSelection: true });
+      setStatus("분석 결과가 준비됐습니다. 결과를 확인한 뒤 추천 보기를 눌러보세요.", "success");
+      document.querySelector("#analysis-result")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      await loadHistory({ keepSelection: true, silent: true });
     } catch (error) {
       setStatus(error.message, "error");
     } finally {
@@ -210,7 +243,7 @@
   }
 
   async function loadHistory(options = {}) {
-    setBusy(true, "진단 이력을 불러오는 중입니다.");
+    setBusy(true, options.silent ? "" : "진단 이력을 불러오는 중입니다.");
     try {
       const data = await api("/api/diagnostics/history/", {
         method: "GET",
@@ -226,7 +259,9 @@
 
       renderHistory(data);
       if (state.prediction && !options.keepSelection) renderPrediction(state.prediction);
-      setStatus(data.length ? "진단 이력을 불러왔습니다." : "아직 저장된 진단 이력이 없습니다.", "success");
+      if (!options.silent) {
+        setStatus(data.length ? "진단 이력을 불러왔습니다." : "아직 저장된 진단 이력이 없습니다.", "success");
+      }
     } catch (error) {
       setStatus(error.message, "error");
     } finally {
@@ -272,6 +307,16 @@
       return;
     }
 
+    setStage("recommend");
+    elements.diagnosisText.innerHTML = `
+      <div class="loading-card">
+        <div>
+          <div class="spinner" aria-hidden="true"></div>
+          <strong>AI 코멘트를 정리하는 중입니다</strong>
+          <p>분석 결과를 바탕으로 피부 상태를 읽기 쉬운 문장으로 요약하고 있습니다.</p>
+        </div>
+      </div>
+    `;
     setBusy(true, "AI 코멘트를 생성 중입니다.");
     try {
       const data = await api("/api/generate/", {
@@ -299,6 +344,11 @@
       if (!state.surveyId) return;
     }
 
+    state.ageGroup = elements.ageGroup.value;
+    localStorage.setItem(storageKeys.ageGroup, state.ageGroup);
+    setStage("recommend");
+    renderLoading(elements.productList, "화장품을 고르는 중입니다", "피부 분석값과 설문 응답을 비교해서 잘 맞는 제품을 추려내고 있습니다.");
+    document.querySelector("#recommendations")?.scrollIntoView({ behavior: "smooth", block: "start" });
     setBusy(true, "제품 추천을 계산 중입니다.");
     try {
       const data = await api("/api/recommendations_data/", {
@@ -306,6 +356,7 @@
         body: JSON.stringify({
           prediction_id: state.predictionId,
           survey_id: state.surveyId,
+          age_group: state.ageGroup,
         }),
       });
       renderProducts(data.recommended_data || []);
@@ -322,13 +373,19 @@
     elements.productList.innerHTML = products.length
       ? products.map((item) => `
         <div class="list-item product">
-          <img src="${escapeHtml(item.logo)}" alt="">
+          ${item.logo
+            ? `<img src="${escapeHtml(item.logo)}" alt="">`
+            : `<span class="product-logo-fallback">${escapeHtml((item.brand || "SC").slice(0, 2))}</span>`}
           <span class="product-main">
             <strong>${escapeHtml(item.brand)}</strong>
             <span>${escapeHtml(item.title)}</span>
             <small>${escapeHtml([item.category, item.etc].filter(Boolean).join(" · "))}</small>
+            <small>${escapeHtml((item.match_reasons || []).join(" · "))}</small>
           </span>
-          <span class="price">${escapeHtml(money(item.price))}</span>
+          <span class="product-side">
+            <strong>${escapeHtml(item.match_score ?? "-")}%</strong>
+            <span class="price">${escapeHtml(money(item.price))}</span>
+          </span>
         </div>
       `).join("")
       : `<div class="empty-state">추천할 제품 데이터가 없습니다.</div>`;
@@ -403,11 +460,13 @@
       atopy: $("atopy"),
       acne: $("acne"),
       sensitivity: $("sensitivity"),
+      ageGroup: $("age-group"),
       metrics: $("metrics"),
       markedImage: $("marked-image"),
       historyList: $("history-list"),
       diagnosisText: $("diagnosis-text"),
       productList: $("product-list"),
+      flowSteps: Array.from(document.querySelectorAll(".flow-step")),
     });
   }
 
@@ -417,6 +476,10 @@
     elements.historyButton.addEventListener("click", () => loadHistory({ keepSelection: true }));
     elements.diagnosisButton.addEventListener("click", generateDiagnosis);
     elements.recommendButton.addEventListener("click", recommend);
+    elements.ageGroup.addEventListener("change", () => {
+      state.ageGroup = elements.ageGroup.value;
+      localStorage.setItem(storageKeys.ageGroup, state.ageGroup);
+    });
   }
 
   function init() {
@@ -425,6 +488,7 @@
     bindUploadZone();
     bindNavigation();
     renderEmptyPanels();
+    elements.ageGroup.value = state.ageGroup;
     syncControls();
     loadHistory().catch((error) => setStatus(error.message, "error"));
   }

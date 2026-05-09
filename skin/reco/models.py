@@ -11,7 +11,7 @@ class ProductInfo(models.Model):
     price = models.IntegerField(verbose_name='가격')  # 쉼표 제거 후 정수형 저장
     etc = models.CharField(max_length=100, verbose_name='기타 정보', null=True, blank=True)
     category = models.CharField(max_length=100, verbose_name='카테고리')
-    logo = models.URLField(max_length=500, verbose_name='로고 URL')
+    logo = models.URLField(max_length=500, verbose_name='로고 URL', blank=True)
 
     def __str__(self):
         return f"{self.brand} - {self.title}"

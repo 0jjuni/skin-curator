@@ -84,6 +84,15 @@ class SurveySerializer(serializers.ModelSerializer):
 #         }
 
 class ProductInfoSerializer(serializers.ModelSerializer):
+    match_score = serializers.SerializerMethodField()
+    match_reasons = serializers.SerializerMethodField()
+
     class Meta:
         model = ProductInfo
         fields = '__all__'
+
+    def get_match_score(self, obj):
+        return getattr(obj, "match_score", None)
+
+    def get_match_reasons(self, obj):
+        return getattr(obj, "match_reasons", [])

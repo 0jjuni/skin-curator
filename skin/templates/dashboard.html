@@ -282,6 +282,63 @@
       align-items: start;
     }
 
+    .process-flow {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+    }
+
+    .flow-step {
+      min-height: 68px;
+      padding: 12px;
+      border-radius: var(--radius);
+      color: var(--muted);
+      background: var(--surface-2);
+      display: grid;
+      align-content: center;
+      gap: 3px;
+    }
+
+    .flow-step span {
+      width: 24px;
+      height: 24px;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      color: #fff;
+      background: #9aa7a3;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .flow-step strong {
+      font-size: 13px;
+      color: inherit;
+    }
+
+    .flow-step.active {
+      color: var(--teal-dark);
+      background: #e8f5f1;
+      box-shadow: inset 0 0 0 1px rgba(18, 116, 100, .22);
+    }
+
+    .flow-step.active span {
+      background: var(--teal);
+    }
+
+    .flow-step.done {
+      color: #34413f;
+      background: #fff7f5;
+    }
+
+    .flow-step.done span {
+      background: var(--coral);
+    }
+
     .panel {
       background: rgba(255, 255, 255, .92);
       border: 1px solid rgba(227, 231, 228, .95);
@@ -378,7 +435,7 @@
 
     .survey-grid {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 12px;
     }
 
@@ -443,6 +500,46 @@
       box-shadow: 0 18px 45px rgba(31, 41, 38, .12);
     }
 
+    .loading-card {
+      grid-column: 1 / -1;
+      min-height: 220px;
+      border: 1px solid rgba(18, 116, 100, .18);
+      border-radius: var(--radius);
+      background:
+        linear-gradient(135deg, rgba(18, 116, 100, .08), rgba(217, 111, 98, .08)),
+        #fff;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      padding: 28px;
+    }
+
+    .spinner {
+      width: 54px;
+      height: 54px;
+      margin: 0 auto 16px;
+      border-radius: 999px;
+      border: 4px solid #dce8e4;
+      border-top-color: var(--teal);
+      animation: spin .85s linear infinite;
+    }
+
+    .loading-card strong {
+      display: block;
+      font-size: 20px;
+      margin-bottom: 8px;
+    }
+
+    .loading-card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
     .history-list,
     .product-list {
       display: grid;
@@ -495,6 +592,20 @@
       background: #f6f2ef;
     }
 
+    .product-logo-fallback {
+      width: 58px;
+      height: 58px;
+      flex: 0 0 58px;
+      border-radius: var(--radius);
+      border: 1px solid var(--line);
+      background: linear-gradient(145deg, #e8f5f1, #fff4f2);
+      color: var(--teal-dark);
+      display: grid;
+      place-items: center;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
     .product-main {
       min-width: 0;
       flex: 1;
@@ -510,6 +621,23 @@
       color: var(--teal-dark);
       font-weight: 900;
       white-space: nowrap;
+    }
+
+    .product-side {
+      min-width: 74px;
+      display: grid;
+      justify-items: end;
+      gap: 4px;
+      color: var(--teal-dark);
+      font-weight: 900;
+      text-align: right;
+    }
+
+    .product-side > strong {
+      padding: 5px 8px;
+      border-radius: 999px;
+      background: #e8f5f1;
+      font-size: 13px;
     }
 
     .status {
@@ -562,10 +690,12 @@
       h1 { font-size: 30px; }
       .survey-grid,
       .metric-grid,
+      .process-flow,
       nav {
         width: 100%;
         margin-left: 0;
       }
+      .process-flow { grid-template-columns: 1fr; }
       .panel-head {
         align-items: flex-start;
         flex-direction: column;
@@ -632,6 +762,15 @@
 
             <div class="survey-grid">
               <div class="field">
+                <label for="age-group">연령대</label>
+                <select id="age-group">
+                  <option value="teens">10대</option>
+                  <option value="twenties" selected>20대</option>
+                  <option value="thirties">30대</option>
+                  <option value="forties_above">40대 이상</option>
+                </select>
+              </div>
+              <div class="field">
                 <label for="atopy">아토피 민감도</label>
                 <select id="atopy">
                   <option value="1">1 낮음</option>
@@ -667,17 +806,34 @@
               <button class="btn" id="analyze-button" type="button">분석 실행</button>
               <button class="btn secondary" id="survey-button" type="button">설문 저장</button>
             </div>
+            <div class="process-flow" aria-label="진행 단계">
+              <div class="flow-step active" data-stage="upload">
+                <span>1</span>
+                <strong>이미지 업로드</strong>
+              </div>
+              <div class="flow-step" data-stage="analysis">
+                <span>2</span>
+                <strong>피부 분석 결과</strong>
+              </div>
+              <div class="flow-step" data-stage="recommend">
+                <span>3</span>
+                <strong>화장품 추천</strong>
+              </div>
+            </div>
             <div class="status" id="status"></div>
           </div>
         </section>
 
-        <section class="panel">
+        <section class="panel" id="analysis-result">
           <div class="panel-head">
             <div>
               <h2>분석 결과</h2>
               <p class="panel-subtitle">확률이 높은 항목일수록 바가 길게 표시됩니다.</p>
             </div>
-            <button class="btn ghost" id="diagnosis-button" type="button">AI 코멘트</button>
+            <div class="actions">
+              <button class="btn ghost" id="diagnosis-button" type="button">AI 코멘트</button>
+              <button class="btn coral" id="recommend-button" type="button">추천 보기</button>
+            </div>
           </div>
           <div class="panel-body">
             <div class="metric-grid" id="metrics"></div>
@@ -691,7 +847,6 @@
               <h2>진단 이력</h2>
               <p class="panel-subtitle">저장된 분석 결과를 선택해 추천과 코멘트를 이어서 확인하세요.</p>
             </div>
-            <button class="btn ghost" id="recommend-button" type="button">제품 추천 받기</button>
           </div>
           <div class="panel-body">
             <div class="history-list" id="history-list"></div>
@@ -714,6 +869,6 @@
     </main>
   </div>
 
-  <script src="{% static 'js/dashboard.js' %}" defer></script>
+  <script src="{% static 'js/dashboard.js' %}?v=20260509-reco-match" defer></script>
 </body>
 </html>
