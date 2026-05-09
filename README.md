@@ -237,6 +237,54 @@ poetry run python manage.py runserver 0.0.0.0:8000
 - 추천 점수는 가중치 코사인 유사도이며 절대적 효능 보장이 아닌 매칭 지표입니다.
 - DB는 SQLite 기본 설정. 다중 사용자 동시 추론에는 부적합.
 
+## Hugging Face Spaces 배포
+
+무료로 데모를 띄울 수 있는 [Hugging Face Spaces](https://huggingface.co/spaces) 용 [Dockerfile](Dockerfile)이 루트에 포함되어 있습니다 (Docker SDK 기반, 16 GB RAM 무료, sleep 없음).
+
+### 1. Hugging Face 가입 + Space 생성
+
+1. [huggingface.co/join](https://huggingface.co/join) 가입
+2. [huggingface.co/new-space](https://huggingface.co/new-space) 에서:
+   - **Space name**: `skin-curator` (자유)
+   - **License**: `cc-by-nc-4.0`
+   - **Space SDK**: **Docker** → **Blank** 템플릿
+   - **Hardware**: `CPU basic · Free`
+   - **Public** 선택 → Create
+
+### 2. 코드 업로드
+
+생성된 Space의 git 주소를 remote로 추가하고 push:
+
+```bash
+git remote add space https://huggingface.co/spaces/<your-hf-username>/skin-curator
+git push space main
+```
+
+처음 push 시 HF 토큰을 묻습니다. [Settings → Access Tokens](https://huggingface.co/settings/tokens)에서 `write` 권한 토큰 생성 후 붙여넣기.
+
+### 3. 가중치 5개 업로드 (필수)
+
+Space 페이지 → **Files** 탭 → **Add file** → **Upload files** 로 가중치 5개를 `weights/` 폴더 안에 올립니다 (HF가 자동으로 LFS 처리).
+
+```
+weights/
+├── lips_dryness_model.pth
+├── moisture_model.pth
+├── pigmentation_model.pth
+├── pore_model.pth
+└── skin_type_model.pth
+```
+
+> Space의 working directory는 `/app/skin/`이라 가중치도 `weights/` (즉 Space 루트 기준 `weights/`)에 위치해야 합니다. 파일을 올리면 Space가 자동 재빌드 후 살아납니다.
+
+### 4. 환경 변수 (선택)
+
+LLM 진단을 켜려면 Space → **Settings** → **Variables and secrets** 에 `OPENAI_API_KEY`를 **Secret** 로 추가. 그 외 `DJANGO_SECRET_KEY`, `OPENAI_MODEL` 등도 동일하게 설정 가능.
+
+### 5. 동작 확인
+
+빌드 로그가 끝나면 Space URL(`https://huggingface.co/spaces/<username>/skin-curator`)에서 위저드가 동작합니다. 첫 추론은 모델 로딩 때문에 5~15초 정도 걸릴 수 있어요.
+
 ## 라이선스
 
 [CC BY-NC 4.0](LICENSE) — 비상업적 용도로 자유롭게 사용·수정·배포 가능. 출처 표기 필수.
