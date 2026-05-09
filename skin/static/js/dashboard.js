@@ -390,14 +390,14 @@
       if (fill) fill.style.strokeDashoffset = String(offset);
     });
 
-    // Metrics tiles
+    // Metrics tiles — bar represents the *care score* (higher = healthier).
     elements.metrics.innerHTML = [
-      metricTile("피부 타입", labels.skinType[p.skin_type_prediction] || "-", topProbability(p.skin_type_probabilities)),
-      metricTile("색소 침착", labels.severity3[p.forehead_pigmentation_prediction] || "-", topProbability(p.forehead_pigmentation_probabilities)),
-      metricTile("모공 (좌)", labels.severity3[p.left_cheek_pore_prediction] || "-", topProbability(p.left_cheek_pore_probabilities)),
-      metricTile("모공 (우)", labels.severity3[p.right_cheek_pore_prediction] || "-", topProbability(p.right_cheek_pore_probabilities)),
-      metricTile("이마 수분", labels.moisture[p.forehead_moisture_prediction] || "-", topProbability(p.forehead_moisture_probabilities)),
-      metricTile("입술 건조", labels.lips[p.lips_dryness_prediction] || "-", topProbability(p.lips_dryness_probabilities)),
+      metricTile("피부 타입", labels.skinType[p.skin_type_prediction] || "-", null, topProbability(p.skin_type_probabilities)),
+      metricTile("색소 침착", labels.severity3[p.forehead_pigmentation_prediction] || "-", careScoreThree(p.forehead_pigmentation_prediction)),
+      metricTile("모공 (좌)", labels.severity3[p.left_cheek_pore_prediction] || "-", careScoreThree(p.left_cheek_pore_prediction)),
+      metricTile("모공 (우)", labels.severity3[p.right_cheek_pore_prediction] || "-", careScoreThree(p.right_cheek_pore_prediction)),
+      metricTile("이마 수분", labels.moisture[p.forehead_moisture_prediction] || "-", careScoreMoisture(p.forehead_moisture_prediction)),
+      metricTile("입술 건조", labels.lips[p.lips_dryness_prediction] || "-", careScoreThree(p.lips_dryness_prediction)),
     ].join("");
 
     // Marked image
@@ -412,15 +412,62 @@
     renderProducts(state.recommendations || []);
   }
 
-  function metricTile(title, value, probability) {
-    const percent = Math.round((probability || 0) * 100);
+  function careScoreThree(value) {
+    // 0 (낮음/양호) = healthy 90, 1 (보통) = 60, 2 (높음/건조) = 30
+    if (value === null || value === undefined) return null;
+    return value === 0 ? 90 : value === 1 ? 60 : 30;
+  }
+
+  function careScoreMoisture(value) {
+    // 0 (부족) = 30, 1 (충분) = 90
+    if (value === null || value === undefined) return null;
+    return value === 1 ? 90 : 30;
+  }
+
+  function tintClassFor(score) {
+    if (score === null || score === undefined) return "tint-info";
+    if (score >= 80) return "tint-good";
+    if (score >= 50) return "tint-mid";
+    return "tint-low";
+  }
+
+  function badgeToneFor(score) {
+    if (score === null || score === undefined) return "";
+    if (score >= 80) return "good";
+    if (score >= 50) return "mid";
+    return "";
+  }
+
+  function metricTile(title, value, careScore, fallbackProbability) {
+    // bar width = care score if available, else model confidence
+    const widthPercent = careScore != null
+      ? careScore
+      : Math.round((fallbackProbability || 0) * 100);
+    const tint = tintClassFor(careScore);
+    const badgeHtml = careScore != null
+      ? `<span class="care-score ${badgeToneFor(careScore)}">${careScore}점</span>`
+      : "";
     return `
       <div class="metric">
-        <span class="label">${escapeHtml(title)}</span>
+        <span class="label">${escapeHtml(title)}${badgeHtml}</span>
         <strong class="value">${escapeHtml(value)}</strong>
-        <div class="bar"><i style="--value:${percent}%"></i></div>
+        <div class="bar"><i class="${tint}" style="--value:${widthPercent}%"></i></div>
       </div>
     `;
+  }
+
+  function affinityFromScore(score) {
+    const s = Number(score) || 0;
+    let dots, label;
+    if (s >= 90)      { dots = 5; label = "매우 잘 맞아요"; }
+    else if (s >= 75) { dots = 4; label = "잘 맞아요"; }
+    else if (s >= 60) { dots = 3; label = "괜찮아요"; }
+    else if (s >= 45) { dots = 2; label = "보통이에요"; }
+    else              { dots = 1; label = "참고만"; }
+    const dotHtml = Array.from({ length: 5 }, (_, i) =>
+      `<span class="dot${i < dots ? " on" : ""}"></span>`
+    ).join("");
+    return { dotHtml, label };
   }
 
   function renderProducts(products) {
@@ -436,6 +483,7 @@
         ? `<img src="${escapeHtml(item.logo)}" alt="">`
         : `<div class="logo-fallback">${escapeHtml((item.brand || "SC").slice(0, 2))}</div>`;
       const meta = [item.category, item.etc].filter(Boolean).join(" · ");
+      const aff = affinityFromScore(item.match_score);
       return `
         <div class="product">
           <div class="rank">${idx + 1}</div>
@@ -447,7 +495,10 @@
             ${reasons.length ? `<div class="reasons" style="margin-top:6px;">${reasonChips}</div>` : ""}
           </div>
           <div class="side">
-            <span class="match">${escapeHtml(item.match_score ?? "-")}%</span>
+            <div class="affinity-wrap">
+              <div class="affinity">${aff.dotHtml}</div>
+              <span class="affinity-label">${escapeHtml(aff.label)}</span>
+            </div>
             <span class="price">${escapeHtml(money(item.price))}</span>
           </div>
         </div>

@@ -46,3 +46,6 @@ Thumbs.db
 marked_images/
 skin/media/
 skin/weights/*.pth
+
+# Claude Code local settings
+.claude/

@@ -1023,23 +1023,62 @@
     }
     .product .side {
       display: grid;
-      gap: 4px;
+      gap: 6px;
       justify-items: end;
       text-align: right;
     }
-    .product .match {
-      padding: 4px 11px;
-      border-radius: var(--r-pill);
-      background: linear-gradient(135deg, var(--blush), var(--peach));
+    .affinity-wrap {
+      display: grid;
+      gap: 4px;
+      justify-items: end;
+    }
+    .affinity {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .affinity .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: rgba(216, 155, 150, .22);
+      transition: background .25s ease;
+    }
+    .affinity .dot.on {
+      background: var(--rose);
+      box-shadow: 0 0 6px rgba(216, 155, 150, .5);
+    }
+    .affinity-label {
+      font-size: 10.5px;
+      letter-spacing: .04em;
       color: var(--rose-dark);
-      font-weight: 800;
-      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
     }
     .product .price {
       font-size: 13px;
       color: var(--ink);
       font-weight: 700;
     }
+
+    /* care-score bar tints */
+    .metric .bar i.tint-good { background: linear-gradient(90deg, var(--mint-deep), var(--mint)); }
+    .metric .bar i.tint-mid  { background: linear-gradient(90deg, var(--gold), var(--peach)); }
+    .metric .bar i.tint-low  { background: linear-gradient(90deg, var(--rose-dark), var(--rose)); }
+    .metric .bar i.tint-info { background: linear-gradient(90deg, var(--rose), var(--gold)); }
+    .metric .care-score {
+      display: inline-block;
+      margin-left: 6px;
+      padding: 1px 7px;
+      border-radius: var(--r-pill);
+      background: rgba(216, 155, 150, .15);
+      color: var(--rose-dark);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .05em;
+      vertical-align: middle;
+    }
+    .metric .care-score.good { background: rgba(143, 184, 166, .2); color: #5a8a76; }
+    .metric .care-score.mid  { background: rgba(201, 168, 117, .2); color: #8a7544; }
 
     /* AI counsel CTA card */
     .counsel-cta {
@@ -1326,12 +1365,130 @@
       opacity: .55;
     }
 
-    @media (max-width: 720px) {
-      .app { padding: 20px 14px 64px; }
-      .hero-card { padding: 56px 28px; }
-      h1.hero-mega { font-size: 38px; }
-      h1.scene-title { font-size: 28px; }
-      .upload-card { padding: 22px; }
+    @media (max-width: 760px) {
+      .app { padding: 18px 14px 56px; }
+
+      .topbar {
+        padding: 10px 14px;
+        top: 16px;
+        margin-bottom: 22px;
+      }
+      .brand-mark { width: 34px; height: 34px; font-size: 13px; }
+      .brand-text strong { font-size: 14px; }
+      .brand-text small { font-size: 9.5px; letter-spacing: .12em; }
+
+      .stepper { gap: 4px; margin-bottom: 22px; }
+      .step-pill { padding: 5px 10px 5px 6px; font-size: 11px; }
+      .step-pill .num { width: 18px; height: 18px; font-size: 10px; }
+
+      .scene-head { margin-bottom: 24px; }
+      .scene-eyebrow { font-size: 9.5px; letter-spacing: .14em; padding: 5px 11px; }
+      h1.scene-title { font-size: 24px; line-height: 1.25; margin: 14px 0 10px; }
+      .scene-sub { font-size: 13.5px; line-height: 1.6; }
+
+      .hero-card { padding: 44px 24px; border-radius: var(--r-lg); }
+      .hero-card::before, .hero-card::after { display: none; }
+      h1.hero-mega { font-size: 32px; line-height: 1.18; }
+      .hero-tagline { font-size: 14px; margin: 16px auto 24px; }
+      .hero-stats { gap: 8px; margin-top: 22px; }
+      .stat-chip { padding: 8px 14px; font-size: 11.5px; }
+
+      .options { gap: 10px; }
+      .options.cols-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .option { padding: 16px 14px; border-radius: var(--r-md); }
+      .option .glyph { font-size: 26px; margin-bottom: 8px; }
+      .option strong { font-size: 14px; }
+      .option small { font-size: 11.5px; }
+      .option.selected::after { width: 18px; height: 18px; font-size: 10px; top: 10px; right: 10px; }
+
+      .step-nav { margin-top: 24px; gap: 10px; flex-wrap: wrap; }
+      .btn { min-height: 46px; padding: 12px 22px; font-size: 14px; }
+      .btn.text { padding: 10px 12px; min-height: 40px; }
+
+      .upload-card { padding: 18px; border-radius: var(--r-lg); }
+      .drop { min-height: 280px; padding: 22px; border-radius: var(--r-md); }
+      .drop-icon { width: 60px; height: 60px; font-size: 24px; margin-bottom: 12px; }
+      .drop strong { font-size: 16px; }
+      .drop .hint { font-size: 12.5px; }
+
+      .scan-canvas { width: min(280px, 76vw); }
+      .scan-info { margin-top: 24px; }
+      .scan-title { font-size: 18px; margin: 14px 0 10px; }
+      .scan-status-list li { padding: 8px 12px; font-size: 11.5px; }
+      .scan-info .eyebrow { font-size: 9px; letter-spacing: .2em; padding: 4px 11px; }
+
+      .card-head { padding: 18px 18px 10px; }
+      .card-head h2 { font-size: 15.5px; }
+      .card-head .sub { font-size: 11.5px; }
+      .card-body { padding: 6px 18px 18px; gap: 12px; }
+
+      .skin-gauge { padding: 16px; gap: 14px; }
+      .gauge-ring { width: 76px; height: 76px; }
+      .gauge-num strong { font-size: 20px; }
+      .gauge-num small { font-size: 8px; }
+      .gauge-meta strong { font-size: 15px; }
+      .gauge-meta small { font-size: 11.5px; }
+
+      .metrics { gap: 8px; }
+      .metric { padding: 12px 12px 10px; }
+      .metric .label { font-size: 9.5px; letter-spacing: .1em; }
+      .metric .value { font-size: 15px; margin-top: 4px; }
+      .metric .bar { height: 4px; margin-top: 8px; }
+
+      .product {
+        grid-template-columns: 24px 44px 1fr;
+        gap: 10px;
+        padding: 12px 14px;
+      }
+      .product .rank { width: 22px; height: 22px; font-size: 10.5px; flex: 0 0 22px; }
+      .product img, .product .logo-fallback { width: 44px; height: 44px; border-radius: var(--r-sm); }
+      .product .info .brand { font-size: 9.5px; letter-spacing: .1em; }
+      .product .info .title { font-size: 13px; margin: 2px 0 3px; }
+      .product .side {
+        grid-column: 2 / 4;
+        flex-direction: row;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        margin-top: 4px;
+      }
+      .affinity-wrap {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 8px;
+      }
+      .affinity .dot { width: 7px; height: 7px; }
+      .affinity-label { font-size: 9.5px; }
+      .product .price { font-size: 12px; }
+
+      .counsel-cta { padding: 22px 22px 26px; border-radius: var(--r-md); }
+      .counsel-cta h3 { font-size: 18px; margin-top: 12px; }
+      .counsel-cta p { font-size: 12.5px; }
+
+      .diag-headline { padding: 20px 22px; }
+      .diag-headline .quote { font-size: 22px; }
+      .diag-headline .summary { font-size: 13px; }
+      .routine-col { padding: 14px 16px; }
+      .routine-list li { font-size: 12.5px; padding-left: 26px; }
+      .routine-list li::before { width: 18px; height: 18px; font-size: 10px; }
+
+      .toast { font-size: 12px; padding: 10px 18px; bottom: 22px; }
+    }
+
+    @media (max-width: 420px) {
+      h1.hero-mega { font-size: 27px; }
+      h1.scene-title { font-size: 21px; }
+      .step-pill .label-mini { display: none; }
+      .options.cols-4 { grid-template-columns: 1fr; }
+      .likert { gap: 5px; }
+      .likert .option { padding: 12px 6px; }
+      .likert .option .glyph { font-size: 20px; }
+      .likert .option strong { font-size: 11px; }
+      .step-nav { flex-direction: column-reverse; align-items: stretch; }
+      .step-nav .btn { width: 100%; justify-content: center; }
+      .step-nav .btn.text { order: 2; }
     }
   </style>
 </head>
@@ -1652,6 +1809,6 @@
   <!-- TOAST -->
   <div class="toast" id="toast"></div>
 
-  <script src="{% static 'js/dashboard.js' %}?v=20260509-wizard" defer></script>
+  <script src="{% static 'js/dashboard.js' %}?v=20260509-affinity" defer></script>
 </body>
 </html>
