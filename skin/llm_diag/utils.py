@@ -79,7 +79,11 @@ def generate_diagnosis_from_prediction(prediction):
                 system_instruction=SYSTEM_PROMPT,
                 response_mime_type="application/json",
                 temperature=0.7,
-                max_output_tokens=1400,
+                max_output_tokens=4096,
+                # Gemini 2.5 Flash spends part of max_output_tokens on its
+                # internal "thinking" trace by default, which truncates the
+                # JSON answer mid-string. Disable thinking for this task.
+                thinking_config=genai_types.ThinkingConfig(thinking_budget=0),
             ),
         )
     except APIError:
