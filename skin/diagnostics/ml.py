@@ -1,5 +1,6 @@
 import base64
 import logging
+import os
 from functools import lru_cache
 
 import cv2
