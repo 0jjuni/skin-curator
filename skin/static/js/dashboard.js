@@ -1,8 +1,33 @@
 (() => {
-  const storageKeys = {
-    surveyId: "skin_survey_id",
-    ageGroup: "skin_age_group",
+  const SCENE_ORDER = [
+    "welcome",
+    "survey-age",
+    "survey-atopy",
+    "survey-acne",
+    "survey-sensitivity",
+    "upload",
+    "scanning",
+    "result",
+    "diagnosis",
+  ];
+  const STEPPER_MAP = {
+    "survey-age": "survey-age",
+    "survey-atopy": "survey-age",
+    "survey-acne": "survey-age",
+    "survey-sensitivity": "survey-age",
+    upload: "upload",
+    scanning: "scanning",
+    result: "result",
+    diagnosis: "diagnosis",
   };
+
+  const SCAN_STAGES = [
+    { key: "face", title: "얼굴 영역을 감지하는 중", duration: 1100 },
+    { key: "crop", title: "이마 · 볼 · 입술을 추출하는 중", duration: 1300 },
+    { key: "skin", title: "피부 타입을 분류하는 중", duration: 1500 },
+    { key: "moisture", title: "수분과 색소침착을 측정하는 중", duration: 1500 },
+    { key: "recommend", title: "맞춤 화장품을 매칭하는 중", duration: 1700 },
+  ];
 
   const labels = {
     skinType: ["건성", "중성", "지성"],
@@ -12,17 +37,26 @@
   };
 
   const state = {
-    surveyId: localStorage.getItem(storageKeys.surveyId) || "",
-    predictionId: null,
+    scene: "welcome",
+    survey: {
+      "age-group": "twenties",
+      atopy: "3",
+      acne: "3",
+      sensitivity: "3",
+    },
+    surveyId: "",
+    imageFile: null,
     prediction: null,
-    history: [],
+    predictionId: null,
+    recommendations: null,
+    diagnosisPayload: null,
     busy: false,
-    stage: "upload",
-    ageGroup: localStorage.getItem(storageKeys.ageGroup) || "twenties",
   };
 
   const elements = {};
   const $ = (id) => document.getElementById(id);
+  const qs = (sel, root = document) => root.querySelector(sel);
+  const qsa = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 
   function escapeHtml(value) {
     return String(value ?? "")
@@ -37,64 +71,66 @@
     return `${Number(value || 0).toLocaleString("ko-KR")}원`;
   }
 
-  function formatDate(value) {
-    if (!value) return "";
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return value;
-    return new Intl.DateTimeFormat("ko-KR", {
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-    }).format(date);
+  /* ============ TOAST ============ */
+  let toastTimer;
+  function toast(message, tone = "info", ms = 2800) {
+    if (!message) return;
+    const el = elements.toast;
+    el.textContent = message;
+    el.className = `toast show ${tone === "error" ? "error" : tone === "success" ? "success" : ""}`.trim();
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove("show"), ms);
   }
 
-  function setStatus(message = "", tone = "info") {
-    elements.status.textContent = message;
-    elements.status.className = `status ${tone === "error" ? "error" : tone === "success" ? "success" : ""}`.trim();
+  /* ============ SCENE NAVIGATION ============ */
+  function showScene(scene) {
+    state.scene = scene;
+    qsa("[data-scene]").forEach((el) => {
+      el.classList.toggle("active", el.dataset.scene === scene);
+    });
+    updateStepper();
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  function getRadioValue(name) {
-    return document.querySelector(`input[name="${name}"]:checked`)?.value || "";
+  function updateStepper() {
+    const targetKey = STEPPER_MAP[state.scene];
+    const orderKeys = ["survey-age", "upload", "scanning", "result", "diagnosis"];
+    const currentIdx = orderKeys.indexOf(targetKey);
+    qsa("#stepper .step-pill").forEach((pill) => {
+      const idx = orderKeys.indexOf(pill.dataset.step);
+      pill.classList.toggle("active", idx === currentIdx);
+      pill.classList.toggle("done", idx > -1 && idx < currentIdx);
+    });
+    elements.stepper.style.visibility = state.scene === "welcome" ? "hidden" : "visible";
   }
 
-  function setRadioValue(name, value) {
-    const input = document.querySelector(`input[name="${name}"][value="${value}"]`);
-    if (input) input.checked = true;
+  function nextScene() {
+    const idx = SCENE_ORDER.indexOf(state.scene);
+    if (idx < 0 || idx >= SCENE_ORDER.length - 1) return;
+    showScene(SCENE_ORDER[idx + 1]);
   }
 
-  function setBusy(isBusy, message) {
-    state.busy = isBusy;
-    if (message) setStatus(message);
-    syncControls();
+  function prevScene() {
+    const idx = SCENE_ORDER.indexOf(state.scene);
+    if (idx <= 0) return;
+    showScene(SCENE_ORDER[idx - 1]);
   }
 
-  function setStage(stage) {
-    state.stage = stage;
-    const order = ["upload", "analysis", "recommend"];
-    elements.flowSteps.forEach((step) => {
-      const stepStage = step.dataset.stage;
-      step.classList.toggle("active", stepStage === stage);
-      step.classList.toggle("done", order.indexOf(stepStage) < order.indexOf(stage));
+  /* ============ OPTION SELECTION ============ */
+  function bindOptionGroups() {
+    qsa(".option[data-key]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const key = btn.dataset.key;
+        const value = btn.dataset.value;
+        state.survey[key] = value;
+        qsa(`.option[data-key="${key}"]`).forEach((sib) => sib.classList.toggle("selected", sib === btn));
+      });
     });
   }
 
-  function syncControls() {
-    const hasSavedPrediction = Boolean(state.predictionId);
-    const hasPreviewFile = Boolean(elements.imageInput.files[0]);
-
-    elements.surveyButton.disabled = state.busy;
-    elements.analyzeButton.disabled = state.busy || !hasPreviewFile;
-    elements.historyButton.disabled = state.busy;
-    elements.diagnosisButton.disabled = state.busy || !hasSavedPrediction;
-    elements.recommendButton.disabled = state.busy || !hasSavedPrediction;
-  }
-
+  /* ============ SURVEY API ============ */
   async function api(path, options = {}) {
-    const init = {
-      ...options,
-      headers: { ...(options.headers || {}) },
-    };
+    const init = { ...options, headers: { ...(options.headers || {}) } };
     if (options.json !== false) {
       init.headers["Content-Type"] = "application/json";
     }
@@ -111,7 +147,6 @@
     if (data.detail) return data.detail;
     if (data.error) return data.error;
     if (Array.isArray(data.non_field_errors)) return data.non_field_errors[0];
-
     const firstKey = Object.keys(data)[0];
     const firstValue = data[firstKey];
     if (Array.isArray(firstValue)) return `${firstKey}: ${firstValue[0]}`;
@@ -119,12 +154,265 @@
     return `요청 실패 (${statusCode})`;
   }
 
+  async function saveSurvey() {
+    const payload = {
+      atopy_level: Number(state.survey.atopy),
+      acne_level: Number(state.survey.acne),
+      sensitivity_level: Number(state.survey.sensitivity),
+    };
+    const data = state.surveyId
+      ? await api(`/api/surveys/${encodeURIComponent(state.surveyId)}/`, {
+          method: "PUT",
+          body: JSON.stringify(payload),
+        })
+      : await api("/api/surveys/", {
+          method: "POST",
+          body: JSON.stringify(payload),
+        });
+    state.surveyId = data.user || String(data.id);
+  }
+
+  /* ============ UPLOAD ============ */
+  function bindUpload() {
+    elements.imageInput.addEventListener("change", (e) => previewFile(e.target.files[0]));
+
+    ["dragenter", "dragover"].forEach((evt) => {
+      elements.dropZone.addEventListener(evt, (e) => {
+        e.preventDefault();
+        elements.dropZone.classList.add("dragging");
+      });
+    });
+    ["dragleave", "drop"].forEach((evt) => {
+      elements.dropZone.addEventListener(evt, (e) => {
+        e.preventDefault();
+        elements.dropZone.classList.remove("dragging");
+      });
+    });
+    elements.dropZone.addEventListener("drop", (e) => {
+      const file = e.dataTransfer.files[0];
+      if (!file) return;
+      const transfer = new DataTransfer();
+      transfer.items.add(file);
+      elements.imageInput.files = transfer.files;
+      previewFile(file);
+    });
+  }
+
+  function previewFile(file) {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast("이미지 파일만 업로드할 수 있어요.", "error");
+      elements.imageInput.value = "";
+      elements.startAnalysis.disabled = true;
+      return;
+    }
+    state.imageFile = file;
+    elements.preview.src = URL.createObjectURL(file);
+    elements.preview.classList.remove("hidden");
+    elements.previewEmpty.classList.add("hidden");
+    elements.startAnalysis.disabled = false;
+    toast(`${file.name} 준비 완료`, "success");
+  }
+
+  /* ============ SCAN ANIMATION ============ */
+  let scanTimers = [];
+
+  function startScanAnimation() {
+    elements.scanStage.classList.add("active");
+    if (state.imageFile) {
+      elements.scanImage.src = URL.createObjectURL(state.imageFile);
+    }
+    elements.scanBar.style.width = "0%";
+
+    qsa("#scan-status-list li").forEach((li) => li.classList.remove("active", "done"));
+    elements.scanTitle.textContent = SCAN_STAGES[0].title;
+
+    let cumulative = 0;
+    const total = SCAN_STAGES.reduce((sum, s) => sum + s.duration, 0);
+
+    SCAN_STAGES.forEach((stage, i) => {
+      const start = cumulative;
+      cumulative += stage.duration;
+
+      scanTimers.push(setTimeout(() => {
+        const items = qsa("#scan-status-list li");
+        items.forEach((li, j) => {
+          li.classList.toggle("active", j === i);
+          li.classList.toggle("done", j < i);
+        });
+        elements.scanTitle.textContent = stage.title;
+      }, start));
+
+      // animate progress within this stage
+      const stepEnd = cumulative;
+      scanTimers.push(setTimeout(() => {
+        elements.scanBar.style.width = `${Math.round((stepEnd / total) * 100)}%`;
+      }, start + 50));
+    });
+  }
+
+  function finishScanAnimation() {
+    qsa("#scan-status-list li").forEach((li) => {
+      li.classList.remove("active");
+      li.classList.add("done");
+    });
+    elements.scanBar.style.width = "100%";
+  }
+
+  function stopScanAnimation() {
+    scanTimers.forEach(clearTimeout);
+    scanTimers = [];
+    elements.scanStage.classList.remove("active");
+  }
+
+  /* ============ ANALYSIS PIPELINE ============ */
+  async function runAnalysis() {
+    if (!state.imageFile) {
+      toast("이미지를 먼저 선택해 주세요.", "error");
+      return;
+    }
+    if (state.busy) return;
+    state.busy = true;
+
+    showScene("scanning");
+    startScanAnimation();
+
+    try {
+      // 1. survey first (sets surveyId)
+      await saveSurvey();
+
+      // 2. predict
+      const body = new FormData();
+      body.append("image", state.imageFile);
+      const prediction = await api("/api/diagnostics/", { method: "POST", json: false, body });
+      state.prediction = prediction;
+      state.predictionId = Number(prediction.id);
+
+      // 3. recommend
+      const reco = await api("/api/recommendations_data/", {
+        method: "POST",
+        body: JSON.stringify({
+          prediction_id: state.predictionId,
+          survey_id: state.surveyId,
+          age_group: state.survey["age-group"],
+        }),
+      });
+      state.recommendations = reco.recommended_data || [];
+
+      // ensure scan animation has had time to play (UX feel)
+      await waitForScan();
+      finishScanAnimation();
+      await sleep(450);
+
+      stopScanAnimation();
+      renderResult();
+      showScene("result");
+    } catch (error) {
+      stopScanAnimation();
+      toast(error.message || "분석에 실패했어요.", "error");
+      showScene("upload");
+    } finally {
+      state.busy = false;
+    }
+  }
+
+  function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
+
+  function waitForScan() {
+    const total = SCAN_STAGES.reduce((sum, s) => sum + s.duration, 0);
+    return sleep(total);
+  }
+
+  /* ============ RESULT RENDERING ============ */
   function topProbability(values) {
     if (!Array.isArray(values) || values.length === 0) return 0;
     return Math.max(...values);
   }
 
-  function metric(title, value, probability) {
+  function computeSkinScore(p) {
+    // Compose a 0-100 score from the prediction signals.
+    const moistureAvg = avg([
+      scaleInverse(p.forehead_moisture_prediction, 1),
+      scaleInverse(p.left_cheek_moisture_prediction, 1),
+      scaleInverse(p.right_cheek_moisture_prediction, 1),
+    ]);
+    const poreAvg = avg([
+      scaleInverse(p.left_cheek_pore_prediction, 2),
+      scaleInverse(p.right_cheek_pore_prediction, 2),
+    ]);
+    const pigmentation = scaleInverse(p.forehead_pigmentation_prediction, 2);
+    const lip = scaleInverse(p.lips_dryness_prediction, 2);
+    return Math.round((moistureAvg * 0.35 + poreAvg * 0.25 + pigmentation * 0.25 + lip * 0.15) * 100);
+  }
+
+  function avg(values) {
+    if (!values.length) return 0;
+    return values.reduce((a, b) => a + b, 0) / values.length;
+  }
+
+  function scaleInverse(value, max) {
+    if (value === null || value === undefined) return 0.5;
+    return Math.max(0, Math.min(1, 1 - Number(value) / max));
+  }
+
+  function renderResult() {
+    const p = state.prediction;
+
+    // Skin score gauge
+    const score = computeSkinScore(p);
+    const tone = score >= 75 ? "최상의 컨디션" : score >= 55 ? "안정적인 상태" : score >= 35 ? "케어가 필요해요" : "집중 관리가 필요해요";
+    const radius = 38;
+    const circumference = 2 * Math.PI * radius;
+    const offset = circumference * (1 - score / 100);
+    elements.skinGauge.innerHTML = `
+      <div class="gauge-ring">
+        <svg viewBox="0 0 92 92">
+          <circle class="track" cx="46" cy="46" r="${radius}"></circle>
+          <circle class="fill" cx="46" cy="46" r="${radius}"
+            stroke-dasharray="${circumference}"
+            stroke-dashoffset="${circumference}"></circle>
+        </svg>
+        <div class="gauge-num">
+          <div>
+            <strong>${score}</strong>
+            <small>SKIN SCORE</small>
+          </div>
+        </div>
+      </div>
+      <div class="gauge-meta">
+        <strong>${tone}</strong>
+        <small>5개 모델의 추론을 종합한 케어 인덱스입니다.</small>
+      </div>
+    `;
+    // animate gauge
+    requestAnimationFrame(() => {
+      const fill = elements.skinGauge.querySelector(".fill");
+      if (fill) fill.style.strokeDashoffset = String(offset);
+    });
+
+    // Metrics tiles
+    elements.metrics.innerHTML = [
+      metricTile("피부 타입", labels.skinType[p.skin_type_prediction] || "-", topProbability(p.skin_type_probabilities)),
+      metricTile("색소 침착", labels.severity3[p.forehead_pigmentation_prediction] || "-", topProbability(p.forehead_pigmentation_probabilities)),
+      metricTile("모공 (좌)", labels.severity3[p.left_cheek_pore_prediction] || "-", topProbability(p.left_cheek_pore_probabilities)),
+      metricTile("모공 (우)", labels.severity3[p.right_cheek_pore_prediction] || "-", topProbability(p.right_cheek_pore_probabilities)),
+      metricTile("이마 수분", labels.moisture[p.forehead_moisture_prediction] || "-", topProbability(p.forehead_moisture_probabilities)),
+      metricTile("입술 건조", labels.lips[p.lips_dryness_prediction] || "-", topProbability(p.lips_dryness_probabilities)),
+    ].join("");
+
+    // Marked image
+    if (p.marked_image_url) {
+      elements.markedCard.style.display = "";
+      elements.markedImage.innerHTML = `<img src="${escapeHtml(p.marked_image_url)}" alt="피부 랜드마크" style="width:100%;display:block;">`;
+    } else {
+      elements.markedCard.style.display = "none";
+    }
+
+    // Products
+    renderProducts(state.recommendations || []);
+  }
+
+  function metricTile(title, value, probability) {
     const percent = Math.round((probability || 0) * 100);
     return `
       <div class="metric">
@@ -135,101 +423,39 @@
     `;
   }
 
-  function renderLoadingMetrics() {
-    elements.metrics.innerHTML = `
-      <div class="loader" style="grid-column:1/-1">
-        <div class="spinner" aria-hidden="true"></div>
-        <strong>피부를 읽고 있어요</strong>
-        <p>얼굴 영역을 추출하고 모델 5종으로 추론 중입니다.</p>
-      </div>
-    `;
+  function renderProducts(products) {
+    if (!products.length) {
+      elements.productList.innerHTML = `<div class="empty"><span class="ico">💎</span>매칭된 제품이 없습니다.</div>`;
+      return;
+    }
+    const top = products.slice(0, 8);
+    elements.productList.innerHTML = top.map((item, idx) => {
+      const reasons = (item.match_reasons || []).slice(0, 3);
+      const reasonChips = reasons.map((r) => `<span class="chip">${escapeHtml(r)}</span>`).join("");
+      const logo = item.logo
+        ? `<img src="${escapeHtml(item.logo)}" alt="">`
+        : `<div class="logo-fallback">${escapeHtml((item.brand || "SC").slice(0, 2))}</div>`;
+      const meta = [item.category, item.etc].filter(Boolean).join(" · ");
+      return `
+        <div class="product">
+          <div class="rank">${idx + 1}</div>
+          ${logo}
+          <div class="info">
+            <div class="brand">${escapeHtml(item.brand || "")}</div>
+            <span class="title">${escapeHtml(item.title || "")}</span>
+            ${meta ? `<small style="color:var(--muted);font-size:11px;">${escapeHtml(meta)}</small>` : ""}
+            ${reasons.length ? `<div class="reasons" style="margin-top:6px;">${reasonChips}</div>` : ""}
+          </div>
+          <div class="side">
+            <span class="match">${escapeHtml(item.match_score ?? "-")}%</span>
+            <span class="price">${escapeHtml(money(item.price))}</span>
+          </div>
+        </div>
+      `;
+    }).join("");
   }
 
-  function renderPrediction(data) {
-    state.prediction = data;
-    if (data.id) state.predictionId = Number(data.id);
-
-    elements.metrics.innerHTML = [
-      metric("피부 타입", labels.skinType[data.skin_type_prediction] || "-", topProbability(data.skin_type_probabilities)),
-      metric("색소 침착", labels.severity3[data.forehead_pigmentation_prediction] || "-", topProbability(data.forehead_pigmentation_probabilities)),
-      metric("모공 (왼쪽)", labels.severity3[data.left_cheek_pore_prediction] || "-", topProbability(data.left_cheek_pore_probabilities)),
-      metric("모공 (오른쪽)", labels.severity3[data.right_cheek_pore_prediction] || "-", topProbability(data.right_cheek_pore_probabilities)),
-      metric("이마 수분", labels.moisture[data.forehead_moisture_prediction] || "-", topProbability(data.forehead_moisture_probabilities)),
-      metric("입술 건조", labels.lips[data.lips_dryness_prediction] || "-", topProbability(data.lips_dryness_probabilities)),
-    ].join("");
-
-    elements.markedImage.innerHTML = data.marked_image_url
-      ? `<img src="${escapeHtml(data.marked_image_url)}" alt="피부 랜드마크 이미지">`
-      : "";
-
-    renderEmptyDiagnosis();
-    renderEmptyProducts();
-    setStage("analysis");
-    syncControls();
-  }
-
-  function renderEmptyMetrics() {
-    elements.metrics.innerHTML = `
-      <div class="empty" style="grid-column:1/-1">
-        <span class="ico">🌸</span>
-        이미지를 분석하면 피부 타입·수분·모공·색소·입술 건조 지표가 여기에 표시돼요.
-      </div>
-    `;
-  }
-
-  function renderEmptyHistory() {
-    elements.historyList.innerHTML = `
-      <div class="empty">
-        <span class="ico">📋</span>
-        아직 진단 이력이 없어요. 이미지를 분석하면 자동으로 저장됩니다.
-      </div>
-    `;
-  }
-
-  function renderEmptyDiagnosis() {
-    elements.diagnosisText.innerHTML = `
-      <div class="empty">
-        <span class="ico">✦</span>
-        분석을 마친 뒤 <strong>AI 진단 받기</strong> 버튼을 눌러보세요.
-      </div>
-    `;
-  }
-
-  function renderEmptyProducts() {
-    elements.productList.innerHTML = `
-      <div class="empty">
-        <span class="ico">💎</span>
-        설문을 저장하고 <strong>맞춤 화장품 보기</strong>를 누르면 추천이 나타나요.
-      </div>
-    `;
-  }
-
-  function renderEmptyAll() {
-    renderEmptyMetrics();
-    renderEmptyHistory();
-    renderEmptyDiagnosis();
-    renderEmptyProducts();
-    setStage("upload");
-  }
-
-  function clearCurrentAnalysis(message = "") {
-    state.prediction = null;
-    state.predictionId = null;
-    elements.imageInput.value = "";
-    elements.preview.removeAttribute("src");
-    elements.preview.classList.add("hidden");
-    elements.previewEmpty.classList.remove("hidden");
-    elements.markedImage.innerHTML = "";
-    renderEmptyMetrics();
-    renderEmptyDiagnosis();
-    renderEmptyProducts();
-    setStage("upload");
-    if (message) setStatus(message, "success");
-    syncControls();
-  }
-
-  /* ---------- DIAGNOSIS RENDERING ---------- */
-
+  /* ============ DIAGNOSIS RENDER ============ */
   function parseDiagnosisPayload(raw) {
     if (!raw) return null;
     if (typeof raw === "object") return raw;
@@ -238,16 +464,12 @@
 
   function chips(items, variant = "") {
     if (!Array.isArray(items) || !items.length) return "";
-    return `<div class="chips">${items
-      .map((item) => `<span class="chip ${variant}">${escapeHtml(item)}</span>`)
-      .join("")}</div>`;
+    return `<div class="chips">${items.map((i) => `<span class="chip ${variant}">${escapeHtml(i)}</span>`).join("")}</div>`;
   }
 
   function routineList(items) {
     if (!Array.isArray(items) || !items.length) return "";
-    return `<ol class="routine-list">${items
-      .map((item) => `<li>${escapeHtml(item)}</li>`)
-      .join("")}</ol>`;
+    return `<ol class="routine-list">${items.map((i) => `<li>${escapeHtml(i)}</li>`).join("")}</ol>`;
   }
 
   function renderStructuredDiagnosis(payload) {
@@ -266,48 +488,24 @@
           <p class="quote">"${escapeHtml(headline)}"</p>
           ${summary ? `<p class="summary">${escapeHtml(summary)}</p>` : ""}
         </div>
-
         ${concerns.length ? `
           <div>
-            <h3 style="margin:0 0 10px;font-size:12.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:800;">우선 케어 포인트</h3>
+            <h3 style="margin:0 0 10px;font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:800;">우선 케어 포인트</h3>
             ${chips(concerns, "rose")}
           </div>
         ` : ""}
-
         ${(morning.length || evening.length) ? `
           <div class="routine-grid">
-            ${morning.length ? `
-              <div class="routine-col">
-                <h3>☀️ 모닝 루틴</h3>
-                ${routineList(morning)}
-              </div>
-            ` : ""}
-            ${evening.length ? `
-              <div class="routine-col evening">
-                <h3>🌙 이브닝 루틴</h3>
-                ${routineList(evening)}
-              </div>
-            ` : ""}
+            ${morning.length ? `<div class="routine-col"><h3>☀️ 모닝 루틴</h3>${routineList(morning)}</div>` : ""}
+            ${evening.length ? `<div class="routine-col evening"><h3>🌙 이브닝 루틴</h3>${routineList(evening)}</div>` : ""}
           </div>
         ` : ""}
-
         ${(seek.length || avoid.length) ? `
           <div class="routine-grid">
-            ${seek.length ? `
-              <div class="ingredient-block">
-                <h4>찾아볼 성분</h4>
-                ${chips(seek, "mint")}
-              </div>
-            ` : ""}
-            ${avoid.length ? `
-              <div class="ingredient-block">
-                <h4>주의할 성분</h4>
-                ${chips(avoid, "gold")}
-              </div>
-            ` : ""}
+            ${seek.length ? `<div class="ingredient-block"><h4>찾아볼 성분</h4>${chips(seek, "mint")}</div>` : ""}
+            ${avoid.length ? `<div class="ingredient-block"><h4>주의할 성분</h4>${chips(avoid, "gold")}</div>` : ""}
           </div>
         ` : ""}
-
         ${tips.length ? `
           <div class="ingredient-block">
             <h4>생활 관리 팁</h4>
@@ -328,363 +526,117 @@
     `;
   }
 
-  /* ---------- API CALLS ---------- */
-
-  async function saveSurvey() {
-    setBusy(true, "설문을 저장 중이에요.");
-    try {
-      const payload = {
-        atopy_level: Number(getRadioValue("atopy")),
-        acne_level: Number(getRadioValue("acne")),
-        sensitivity_level: Number(getRadioValue("sensitivity")),
-      };
-      const data = state.surveyId
-        ? await api(`/api/surveys/${encodeURIComponent(state.surveyId)}/`, {
-          method: "PUT",
-          body: JSON.stringify(payload),
-        })
-        : await api("/api/surveys/", {
-          method: "POST",
-          body: JSON.stringify(payload),
-        });
-
-      state.surveyId = data.user || String(data.id);
-      localStorage.setItem(storageKeys.surveyId, state.surveyId);
-      setStatus("설문이 저장됐어요 ✨", "success");
-      return true;
-    } catch (error) {
-      setStatus(error.message, "error");
-      return false;
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function analyze() {
-    const file = elements.imageInput.files[0];
-    if (!file) {
-      setStatus("이미지를 먼저 선택해 주세요.", "error");
-      return;
-    }
-
-    const body = new FormData();
-    body.append("image", file);
-
-    setStage("analysis");
-    renderLoadingMetrics();
-    elements.markedImage.innerHTML = "";
-    renderEmptyDiagnosis();
-    renderEmptyProducts();
-    setBusy(true, "피부 분석을 시작했어요. 첫 분석은 모델 로딩으로 시간이 조금 걸릴 수 있어요.");
-    document.querySelector("#analysis-result")?.scrollIntoView({ behavior: "smooth", block: "start" });
-    try {
-      const data = await api("/api/diagnostics/", {
-        method: "POST",
-        json: false,
-        body,
-      });
-      renderPrediction(data);
-      setStatus("분석이 완료됐어요. 진단을 받거나 추천을 확인해 보세요.", "success");
-      document.querySelector("#analysis-result")?.scrollIntoView({ behavior: "smooth", block: "start" });
-      await loadHistory({ keepSelection: true, silent: true });
-    } catch (error) {
-      setStatus(error.message, "error");
-      renderEmptyMetrics();
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function loadHistory(options = {}) {
-    setBusy(true, options.silent ? "" : "진단 이력을 불러오는 중이에요.");
-    try {
-      const data = await api("/api/diagnostics/history/", {
-        method: "GET",
-        json: false,
-      });
-
-      state.history = data;
-      renderHistory(data);
-      if (!options.silent) {
-        setStatus(data.length ? "진단 이력을 불러왔어요." : "아직 저장된 진단 이력이 없어요.", "success");
-      }
-    } catch (error) {
-      setStatus(error.message, "error");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  function renderHistory(items) {
-    if (!items.length) {
-      renderEmptyHistory();
-      syncControls();
-      return;
-    }
-
-    elements.historyList.innerHTML = items.map((item) => {
-      const active = Number(item.id) === Number(state.predictionId) ? " active" : "";
-      return `
-        <button class="history-item${active}" type="button" data-id="${item.id}">
-          <div class="meta">
-            <strong>${escapeHtml(labels.skinType[item.skin_type_prediction] || "분석")} 피부</strong>
-            <small>${escapeHtml(formatDate(item.created_at))}</small>
-          </div>
-          <span class="badge">입술 ${escapeHtml(labels.lips[item.lips_dryness_prediction] || "-")}</span>
-        </button>
-      `;
-    }).join("");
-
-    elements.historyList.querySelectorAll("[data-id]").forEach((button) => {
-      button.addEventListener("click", () => {
-        const selected = items.find((item) => Number(item.id) === Number(button.dataset.id));
-        if (!selected) return;
-        renderPrediction(selected);
-        renderHistory(items);
-        setStatus(`이전 진단(#${selected.id})을 불러왔어요.`, "success");
-      });
-    });
-    syncControls();
-  }
-
-  async function generateDiagnosis() {
-    if (!state.predictionId) {
-      setStatus("AI 진단을 받으려면 분석 결과를 먼저 선택해 주세요.", "error");
-      return;
-    }
-
-    setStage("recommend");
+  function renderDiagnosisLoader() {
     elements.diagnosisText.innerHTML = `
-      <div class="loader">
-        <div class="spinner" aria-hidden="true"></div>
-        <strong>AI 카운슬러가 진단 중이에요</strong>
-        <p>분석 결과를 바탕으로 모닝/이브닝 루틴과 성분 가이드를 정리하고 있어요.</p>
+      <div class="empty" style="background:linear-gradient(135deg,rgba(245,215,204,.4),rgba(197,221,209,.35));">
+        <div style="width:42px;height:42px;margin:0 auto 14px;border-radius:50%;border:3px solid rgba(216,155,150,.25);border-top-color:var(--rose);animation:spin .85s linear infinite;"></div>
+        <strong style="display:block;font-size:15px;color:var(--ink);margin-bottom:4px;">AI 카운셀러가 진단 중이에요</strong>
+        <span style="color:var(--muted);font-size:13px;">분석 결과를 K-뷰티 톤으로 정리하고 있습니다.</span>
       </div>
+      <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
     `;
-    setBusy(true, "AI 진단을 생성 중이에요.");
+  }
+
+  async function fetchDiagnosis() {
+    if (!state.predictionId) {
+      toast("분석 결과가 필요해요.", "error");
+      return;
+    }
+    if (state.busy) return;
+    state.busy = true;
+
+    showScene("diagnosis");
+    renderDiagnosisLoader();
     try {
       const data = await api("/api/generate/", {
         method: "POST",
         body: JSON.stringify({ prediction_id: state.predictionId }),
       });
       const payload = parseDiagnosisPayload(data.diagnosis_text);
+      state.diagnosisPayload = payload;
       if (payload && typeof payload === "object" && (payload.summary || payload.headline)) {
         renderStructuredDiagnosis(payload);
       } else {
-        renderPlaintextDiagnosis(data.diagnosis_text || "진단 결과가 비어 있습니다.");
+        renderPlaintextDiagnosis(data.diagnosis_text || "진단 결과가 비어있습니다.");
       }
-      setStatus("AI 진단이 도착했어요 ✦", "success");
-      document.querySelector("#diagnosis")?.scrollIntoView({ behavior: "smooth", block: "start" });
     } catch (error) {
-      setStatus(error.message, "error");
-      renderEmptyDiagnosis();
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function recommend() {
-    if (!state.predictionId) {
-      setStatus("추천을 받으려면 분석 결과를 먼저 선택해 주세요.", "error");
-      return;
-    }
-
-    const saved = await saveSurvey();
-    if (!saved || !state.surveyId) return;
-
-    state.ageGroup = getRadioValue("age-group") || "twenties";
-    localStorage.setItem(storageKeys.ageGroup, state.ageGroup);
-    setStage("recommend");
-    elements.productList.innerHTML = `
-      <div class="loader">
-        <div class="spinner" aria-hidden="true"></div>
-        <strong>당신만의 화장품을 고르는 중이에요</strong>
-        <p>피부 신호와 설문 응답으로 가장 잘 맞는 제품을 추려내고 있어요.</p>
-      </div>
-    `;
-    document.querySelector("#recommend")?.scrollIntoView({ behavior: "smooth", block: "start" });
-    setBusy(true, "맞춤 추천을 계산 중이에요.");
-    try {
-      const data = await api("/api/recommendations_data/", {
-        method: "POST",
-        body: JSON.stringify({
-          prediction_id: state.predictionId,
-          survey_id: state.surveyId,
-          age_group: state.ageGroup,
-        }),
-      });
-      renderProducts(data.recommended_data || []);
-      setStatus("추천이 완료됐어요 💎", "success");
-    } catch (error) {
-      setStatus(error.message, "error");
-      renderEmptyProducts();
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  function renderProducts(products) {
-    if (!products.length) {
-      renderEmptyProducts();
-      return;
-    }
-
-    elements.productList.innerHTML = products.map((item) => {
-      const reasons = (item.match_reasons || []).slice(0, 3);
-      const reasonChips = reasons
-        .map((r) => `<span class="chip">${escapeHtml(r)}</span>`)
-        .join("");
-      const logo = item.logo
-        ? `<img src="${escapeHtml(item.logo)}" alt="">`
-        : `<div class="logo-fallback">${escapeHtml((item.brand || "SC").slice(0, 2))}</div>`;
-      const meta = [item.category, item.etc].filter(Boolean).join(" · ");
-      return `
-        <div class="product">
-          ${logo}
-          <div class="info">
-            <div class="brand">${escapeHtml(item.brand || "")}</div>
-            <span class="title">${escapeHtml(item.title || "")}</span>
-            ${meta ? `<small style="color:var(--muted);font-size:12px;">${escapeHtml(meta)}</small>` : ""}
-            ${reasons.length ? `<div class="reasons" style="margin-top:8px;">${reasonChips}</div>` : ""}
-          </div>
-          <div class="side">
-            <span class="match">${escapeHtml(item.match_score ?? "-")}<small>%</small></span>
-            <span class="price">${escapeHtml(money(item.price))}</span>
+      elements.diagnosisText.innerHTML = `
+        <div class="empty">
+          <span class="ico">⚠️</span>
+          ${escapeHtml(error.message || "AI 진단을 불러오지 못했어요.")}
+          <div style="margin-top:12px;font-size:12px;color:var(--muted);">
+            OPENAI_API_KEY 설정을 확인해 주세요.
           </div>
         </div>
       `;
-    }).join("");
-  }
-
-  /* ---------- UPLOAD ---------- */
-
-  function previewFile(file) {
-    if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      setStatus("이미지 파일만 업로드할 수 있어요.", "error");
-      elements.imageInput.value = "";
-      syncControls();
-      return;
+    } finally {
+      state.busy = false;
     }
-
-    elements.preview.src = URL.createObjectURL(file);
-    elements.preview.classList.remove("hidden");
-    elements.previewEmpty.classList.add("hidden");
-    setStatus(`${file.name} 파일이 준비됐어요. 분석 버튼을 눌러주세요.`, "success");
-    syncControls();
   }
 
-  function bindUploadZone() {
-    elements.imageInput.addEventListener("change", (event) => {
-      previewFile(event.target.files[0]);
-    });
-
-    ["dragenter", "dragover"].forEach((eventName) => {
-      elements.dropZone.addEventListener(eventName, (event) => {
-        event.preventDefault();
-        elements.dropZone.style.borderColor = "var(--rose)";
-      });
-    });
-
-    ["dragleave", "drop"].forEach((eventName) => {
-      elements.dropZone.addEventListener(eventName, (event) => {
-        event.preventDefault();
-        elements.dropZone.style.borderColor = "";
-      });
-    });
-
-    elements.dropZone.addEventListener("drop", (event) => {
-      const file = event.dataTransfer.files[0];
-      if (!file) return;
-      const transfer = new DataTransfer();
-      transfer.items.add(file);
-      elements.imageInput.files = transfer.files;
-      previewFile(file);
-    });
+  /* ============ RESET ============ */
+  function resetAll() {
+    state.scene = "welcome";
+    state.imageFile = null;
+    state.prediction = null;
+    state.predictionId = null;
+    state.recommendations = null;
+    state.diagnosisPayload = null;
+    elements.imageInput.value = "";
+    elements.preview.removeAttribute("src");
+    elements.preview.classList.add("hidden");
+    elements.previewEmpty.classList.remove("hidden");
+    elements.startAnalysis.disabled = true;
+    elements.diagnosisText.innerHTML = "";
+    showScene("welcome");
   }
 
-  function bindNavigation() {
-    document.querySelectorAll(".topnav a[href^='#']").forEach((link) => {
-      link.addEventListener("click", () => {
-        document.querySelectorAll(".topnav a").forEach((item) => item.classList.remove("active"));
-        link.classList.add("active");
-      });
-    });
-  }
-
+  /* ============ BIND ============ */
   function cacheElements() {
     Object.assign(elements, {
-      status: $("status"),
-      surveyButton: $("survey-button"),
-      analyzeButton: $("analyze-button"),
-      historyButton: $("history-button"),
-      diagnosisButton: $("diagnosis-button"),
-      recommendButton: $("recommend-button"),
+      stepper: $("stepper"),
+      scanStage: $("scan-stage"),
+      scanImage: $("scan-image"),
+      scanTitle: $("scan-title"),
+      scanBar: $("scan-bar"),
       imageInput: $("image-input"),
       preview: $("preview"),
       previewEmpty: $("preview-empty"),
       dropZone: $("drop-zone"),
-      metrics: $("metrics"),
-      markedImage: $("marked-image"),
-      historyList: $("history-list"),
-      diagnosisText: $("diagnosis-text"),
+      startAnalysis: $("start-analysis"),
       productList: $("product-list"),
-      flowSteps: Array.from(document.querySelectorAll(".step[data-stage]")),
+      metrics: $("metrics"),
+      skinGauge: $("skin-gauge"),
+      markedImage: $("marked-image"),
+      markedCard: $("marked-card"),
+      diagnosisText: $("diagnosis-text"),
+      toast: $("toast"),
     });
   }
 
   function bindActions() {
-    elements.surveyButton.addEventListener("click", saveSurvey);
-    elements.analyzeButton.addEventListener("click", analyze);
-    elements.historyButton.addEventListener("click", async () => {
-      clearCurrentAnalysis();
-      await loadHistory({ keepSelection: true });
-    });
-    elements.diagnosisButton.addEventListener("click", generateDiagnosis);
-    elements.recommendButton.addEventListener("click", recommend);
+    $("welcome-start").addEventListener("click", () => showScene("survey-age"));
+    $("home-link").addEventListener("click", resetAll);
 
-    document.querySelectorAll('input[name="age-group"]').forEach((input) => {
-      input.addEventListener("change", () => {
-        state.ageGroup = getRadioValue("age-group") || "twenties";
-        localStorage.setItem(storageKeys.ageGroup, state.ageGroup);
-      });
-    });
+    qsa("[data-action='next']").forEach((btn) => btn.addEventListener("click", nextScene));
+    qsa("[data-action='back']").forEach((btn) => btn.addEventListener("click", prevScene));
 
-    document.querySelectorAll('input[name="atopy"], input[name="acne"], input[name="sensitivity"]').forEach((input) => {
-      input.addEventListener("change", () => {
-        if (!state.surveyId) return;
-        setStatus("설문 값이 바뀌었어요. 추천 전에 자동으로 저장됩니다.");
-      });
-    });
-  }
+    $("start-analysis").addEventListener("click", runAnalysis);
 
-  async function refreshHistoryOnStart() {
-    try {
-      await loadHistory({ keepSelection: true, silent: true });
-      setStatus(
-        state.history.length
-          ? "이전 진단을 불러왔어요. 새 분석을 시작하거나 이력에서 골라보세요."
-          : "얼굴 사진을 올리면 분석이 시작돼요.",
-        state.history.length ? "success" : "info"
-      );
-    } catch (error) {
-      setStatus(error.message, "error");
-    }
-  }
+    $("diagnosis-button").addEventListener("click", fetchDiagnosis);
+    $("diagnosis-button-2").addEventListener("click", fetchDiagnosis);
+    $("back-to-result").addEventListener("click", () => showScene("result"));
 
-  function restorePreferences() {
-    setRadioValue("age-group", state.ageGroup);
+    $("restart-button").addEventListener("click", resetAll);
+    $("restart-button-2").addEventListener("click", resetAll);
   }
 
   function init() {
     cacheElements();
+    bindOptionGroups();
+    bindUpload();
     bindActions();
-    bindUploadZone();
-    bindNavigation();
-    renderEmptyAll();
-    restorePreferences();
-    syncControls();
-    refreshHistoryOnStart();
+    showScene("welcome");
   }
 
   document.addEventListener("DOMContentLoaded", init);

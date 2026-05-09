@@ -4,10 +4,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Skin Curator · 당신의 피부, 오늘의 케어</title>
+  <title>Skin Curator · AI 피부 진단 & 화장품 큐레이션</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;1,500&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;1,500&family=Noto+Sans+KR:wght@400;500;600;700;900&display=swap" rel="stylesheet">
   <style>
     :root {
       --bg: #FAF5F1;
@@ -26,9 +26,11 @@
       --ink-soft: #5C4F47;
       --muted: #8B7C73;
       --line: #EFE5DB;
-      --shell: rgba(255, 252, 250, .7);
+      --shell: rgba(255, 252, 250, .75);
       --shadow-soft: 0 24px 60px rgba(184, 138, 122, .14);
-      --shadow-pop: 0 30px 80px rgba(184, 138, 122, .2);
+      --shadow-pop: 0 30px 80px rgba(184, 138, 122, .22);
+      --shadow-press: 0 18px 40px rgba(184, 138, 122, .28);
+      --r-xl: 32px;
       --r-lg: 24px;
       --r-md: 16px;
       --r-sm: 12px;
@@ -36,6 +38,7 @@
     }
 
     * { box-sizing: border-box; }
+    html, body { height: 100%; }
     html { scroll-behavior: smooth; }
 
     body {
@@ -49,6 +52,7 @@
         radial-gradient(ellipse 60% 60% at 100% 100%, rgba(252, 228, 214, .45), transparent 60%),
         radial-gradient(ellipse 70% 50% at 0% 100%, rgba(232, 221, 208, .45), transparent 55%);
       background-attachment: fixed;
+      overflow-x: hidden;
     }
 
     button, input, select, textarea { font: inherit; color: inherit; }
@@ -56,13 +60,16 @@
 
     .serif { font-family: "Cormorant Garamond", "Noto Serif KR", serif; font-style: italic; font-weight: 500; }
 
+    /* ========== APP SHELL ========== */
     .app {
-      max-width: 1240px;
+      max-width: 1080px;
       margin: 0 auto;
-      padding: 36px 28px 96px;
+      padding: 32px 28px 80px;
+      min-height: 100%;
+      position: relative;
     }
 
-    /* ========== TOPBAR ========== */
+    /* ========== TOP NAV ========== */
     .topbar {
       display: flex;
       align-items: center;
@@ -71,26 +78,27 @@
       border-radius: var(--r-pill);
       background: var(--shell);
       backdrop-filter: blur(20px);
-      border: 1px solid rgba(255, 255, 255, .8);
+      border: 1px solid rgba(255, 255, 255, .85);
       box-shadow: 0 12px 30px rgba(184, 138, 122, .08);
-      margin-bottom: 36px;
+      margin-bottom: 28px;
+      position: sticky;
+      top: 24px;
+      z-index: 10;
     }
 
     .brand {
       display: flex;
       align-items: center;
       gap: 12px;
+      cursor: pointer;
     }
 
     .brand-mark {
-      width: 38px;
-      height: 38px;
+      width: 38px; height: 38px;
       border-radius: var(--r-pill);
-      display: grid;
-      place-items: center;
+      display: grid; place-items: center;
       color: #fff;
-      font-weight: 900;
-      font-size: 14px;
+      font-weight: 900; font-size: 14px;
       letter-spacing: .04em;
       background: radial-gradient(circle at 30% 25%, #FFD9C9, var(--rose) 75%);
       box-shadow: 0 10px 22px rgba(216, 155, 150, .35);
@@ -104,69 +112,101 @@
 
     .brand-text small {
       color: var(--muted);
-      font-size: 12px;
-      letter-spacing: .12em;
+      font-size: 11px;
+      letter-spacing: .15em;
       text-transform: uppercase;
     }
 
-    .topnav {
+    .top-actions {
       display: flex;
-      gap: 6px;
+      gap: 8px;
+      align-items: center;
     }
 
-    .topnav a {
-      padding: 9px 18px;
+    .icon-btn {
+      width: 40px; height: 40px;
       border-radius: var(--r-pill);
+      display: grid; place-items: center;
+      background: rgba(255, 255, 255, .6);
       color: var(--ink-soft);
-      text-decoration: none;
-      font-size: 14px;
-      font-weight: 500;
-      transition: background .2s ease, color .2s ease;
+      border: 1px solid var(--line);
+      transition: all .2s ease;
+    }
+    .icon-btn:hover { background: #fff; color: var(--rose-dark); transform: translateY(-1px); }
+    .icon-btn svg { width: 18px; height: 18px; }
+
+    /* ========== STEPPER PROGRESS ========== */
+    .stepper {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      margin: 0 auto 32px;
+      max-width: 720px;
+      flex-wrap: wrap;
     }
 
-    .topnav a:hover { background: rgba(255, 255, 255, .7); }
-    .topnav a.active {
-      background: var(--ink);
-      color: #fff;
+    .step-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px 6px 8px;
+      border-radius: var(--r-pill);
+      background: rgba(255, 255, 255, .55);
+      border: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      transition: all .25s ease;
+    }
+    .step-pill .num {
+      width: 22px; height: 22px;
+      border-radius: var(--r-pill);
+      display: grid; place-items: center;
+      background: rgba(139, 124, 115, .18);
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 900;
+    }
+    .step-pill.done { color: var(--mint-deep); background: rgba(197, 221, 209, .35); border-color: transparent; }
+    .step-pill.done .num { background: var(--mint-deep); color: #fff; }
+    .step-pill.active {
+      color: var(--rose-dark);
+      background: linear-gradient(135deg, var(--blush), var(--peach));
+      border-color: transparent;
+      transform: scale(1.05);
+      box-shadow: 0 10px 24px rgba(216, 155, 150, .25);
+    }
+    .step-pill.active .num { background: var(--rose); color: #fff; }
+    .step-pill .label-mini { display: none; }
+    @media (min-width: 720px) {
+      .step-pill .label-mini { display: inline; }
     }
 
-    /* ========== HERO ========== */
-    .hero {
+    /* ========== STAGE (full-card per step) ========== */
+    .stage {
       position: relative;
-      padding: 64px 56px;
-      border-radius: var(--r-lg);
-      background:
-        radial-gradient(ellipse 80% 90% at 90% 0%, rgba(216, 155, 150, .35), transparent 60%),
-        radial-gradient(ellipse 60% 80% at 0% 100%, rgba(197, 221, 209, .35), transparent 60%),
-        var(--bg-soft);
-      box-shadow: var(--shadow-soft);
-      border: 1px solid rgba(255, 255, 255, .9);
-      overflow: hidden;
-      margin-bottom: 28px;
+      min-height: 60vh;
     }
 
-    .hero::before {
-      content: "✦";
-      position: absolute;
-      top: 28px;
-      right: 60px;
-      font-size: 22px;
-      color: var(--rose);
-      opacity: .55;
+    .scene {
+      display: none;
+      animation: scene-in .55s cubic-bezier(.22,.86,.34,1) both;
+    }
+    .scene.active { display: block; }
+
+    @keyframes scene-in {
+      from { opacity: 0; transform: translateY(18px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
-    .hero::after {
-      content: "•";
-      position: absolute;
-      bottom: 36px;
-      right: 110px;
-      font-size: 60px;
-      color: var(--mint-deep);
-      opacity: .15;
-      line-height: 0;
+    .scene-head {
+      text-align: center;
+      max-width: 720px;
+      margin: 0 auto 32px;
     }
 
-    .eyebrow {
+    .scene-eyebrow {
       display: inline-flex;
       align-items: center;
       gap: 8px;
@@ -179,149 +219,574 @@
       letter-spacing: .18em;
       text-transform: uppercase;
     }
+    .scene-eyebrow::before { content: "✧"; font-size: 12px; }
 
-    .eyebrow::before { content: "✧"; font-size: 12px; }
-
-    h1.hero-title {
-      margin: 18px 0 0;
-      font-size: 46px;
-      line-height: 1.18;
+    h1.scene-title {
+      margin: 18px 0 12px;
+      font-size: 38px;
+      line-height: 1.2;
       letter-spacing: -.01em;
+      font-weight: 700;
+    }
+    h1.scene-title .ornament {
+      font-family: "Cormorant Garamond", serif;
+      font-style: italic;
+      font-weight: 500;
+      color: var(--rose-dark);
+    }
+
+    .scene-sub {
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.7;
+      max-width: 580px;
+      margin: 0 auto;
+    }
+
+    /* ========== WELCOME / HERO ========== */
+    .hero-card {
+      position: relative;
+      padding: 72px 56px;
+      border-radius: var(--r-xl);
+      background:
+        radial-gradient(ellipse 90% 80% at 90% 0%, rgba(216, 155, 150, .35), transparent 60%),
+        radial-gradient(ellipse 60% 80% at 0% 100%, rgba(197, 221, 209, .35), transparent 60%),
+        var(--bg-soft);
+      box-shadow: var(--shadow-soft);
+      border: 1px solid rgba(255, 255, 255, .9);
+      overflow: hidden;
+      text-align: center;
+    }
+
+    .hero-card::before {
+      content: "✦";
+      position: absolute;
+      top: 40px;
+      right: 80px;
+      font-size: 28px;
+      color: var(--rose);
+      opacity: .4;
+      animation: float 4s ease-in-out infinite;
+    }
+    .hero-card::after {
+      content: "✧";
+      position: absolute;
+      bottom: 60px;
+      left: 80px;
+      font-size: 22px;
+      color: var(--mint-deep);
+      opacity: .35;
+      animation: float 5s ease-in-out infinite reverse;
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+
+    h1.hero-mega {
+      margin: 24px auto 0;
+      font-size: 56px;
+      line-height: 1.12;
+      letter-spacing: -.015em;
       max-width: 760px;
       font-weight: 700;
     }
+    h1.hero-mega .ornament {
+      font-family: "Cormorant Garamond", serif;
+      font-style: italic;
+      font-weight: 500;
+      color: var(--rose-dark);
+    }
 
-    h1.hero-title em { font-style: normal; color: var(--rose-dark); }
-    h1.hero-title .ornament { font-family: "Cormorant Garamond", serif; font-style: italic; font-weight: 500; }
-
-    .hero-sub {
-      margin: 18px 0 28px;
-      max-width: 580px;
+    .hero-tagline {
+      margin: 20px auto 36px;
+      max-width: 560px;
       color: var(--muted);
       font-size: 16px;
       line-height: 1.75;
     }
 
-    .hero-actions {
+    .hero-stats {
       display: flex;
+      justify-content: center;
+      gap: 14px;
       flex-wrap: wrap;
-      gap: 10px;
+      margin-top: 32px;
+    }
+
+    .stat-chip {
+      padding: 10px 18px;
+      border-radius: var(--r-pill);
+      background: rgba(255, 255, 255, .8);
+      border: 1px solid var(--line);
+      font-size: 13px;
+      color: var(--ink-soft);
+      display: inline-flex;
       align-items: center;
+      gap: 8px;
+    }
+    .stat-chip strong {
+      color: var(--rose-dark);
+      font-weight: 800;
     }
 
     /* ========== BUTTONS ========== */
     .btn {
-      min-height: 48px;
-      padding: 12px 26px;
+      min-height: 52px;
+      padding: 14px 32px;
       border-radius: var(--r-pill);
       font-weight: 700;
-      font-size: 14px;
-      letter-spacing: .02em;
-      transition: transform .2s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
+      font-size: 15px;
+      letter-spacing: .01em;
+      transition: all .25s ease;
       display: inline-flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
     }
 
     .btn.primary {
       background: var(--ink);
       color: #fff;
-      box-shadow: 0 14px 28px rgba(58, 47, 42, .25);
+      box-shadow: 0 16px 32px rgba(58, 47, 42, .28);
     }
     .btn.primary:hover:not(:disabled) {
       transform: translateY(-2px);
-      box-shadow: 0 18px 36px rgba(58, 47, 42, .3);
+      box-shadow: 0 22px 40px rgba(58, 47, 42, .32);
     }
 
     .btn.rose {
-      background: var(--rose);
+      background: linear-gradient(135deg, var(--rose), var(--rose-dark));
       color: #fff;
-      box-shadow: 0 14px 28px rgba(216, 155, 150, .35);
+      box-shadow: 0 16px 32px rgba(216, 155, 150, .4);
     }
     .btn.rose:hover:not(:disabled) {
       transform: translateY(-2px);
-      background: var(--rose-dark);
+      box-shadow: 0 22px 44px rgba(216, 155, 150, .5);
     }
-
-    .btn.soft {
-      background: rgba(255, 255, 255, .85);
-      color: var(--ink);
-      border: 1px solid var(--line);
-    }
-    .btn.soft:hover:not(:disabled) { background: #fff; transform: translateY(-1px); }
 
     .btn.ghost {
-      background: transparent;
+      background: rgba(255, 255, 255, .7);
       color: var(--ink-soft);
-      padding: 12px 18px;
+      border: 1px solid var(--line);
     }
-    .btn.ghost:hover:not(:disabled) { color: var(--rose-dark); }
+    .btn.ghost:hover:not(:disabled) { background: #fff; color: var(--ink); }
+
+    .btn.text {
+      background: transparent;
+      color: var(--muted);
+      padding: 12px 16px;
+      min-height: 44px;
+    }
+    .btn.text:hover:not(:disabled) { color: var(--rose-dark); }
 
     .btn:disabled { cursor: not-allowed; opacity: .42; transform: none; box-shadow: none; }
 
-    /* ========== JOURNEY (process flow) ========== */
-    .journey {
+    .btn .arrow { transition: transform .25s ease; }
+    .btn:hover:not(:disabled) .arrow { transform: translateX(3px); }
+
+    /* ========== STEP NAV ========== */
+    .step-nav {
       display: flex;
+      justify-content: space-between;
       align-items: center;
       gap: 14px;
-      padding: 14px 22px;
-      border-radius: var(--r-pill);
-      background: var(--shell);
-      border: 1px solid rgba(255, 255, 255, .7);
-      backdrop-filter: blur(14px);
-      margin-bottom: 28px;
-      flex-wrap: wrap;
+      margin-top: 32px;
+      max-width: 720px;
+      margin-left: auto;
+      margin-right: auto;
     }
 
-    .step {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 6px 16px 6px 8px;
-      border-radius: var(--r-pill);
-      color: var(--muted);
-      font-size: 13px;
-      font-weight: 700;
-      transition: color .2s ease, background .2s ease;
-    }
-
-    .step .dot {
-      width: 26px;
-      height: 26px;
-      border-radius: var(--r-pill);
+    /* ========== OPTION CARDS (survey) ========== */
+    .options {
       display: grid;
-      place-items: center;
-      background: rgba(139, 124, 115, .15);
-      color: var(--muted);
+      gap: 14px;
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    .options.cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .options.cols-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    @media (min-width: 720px) {
+      .options.cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    }
+
+    .option {
+      position: relative;
+      padding: 22px 20px;
+      border-radius: var(--r-md);
+      background: var(--bg-soft);
+      border: 2px solid var(--line);
+      cursor: pointer;
+      transition: all .22s ease;
+      text-align: left;
+    }
+    .option:hover {
+      border-color: var(--rose);
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-soft);
+    }
+    .option.selected {
+      border-color: var(--rose);
+      background: linear-gradient(135deg, rgba(245, 215, 204, .5), rgba(252, 228, 214, .35));
+      box-shadow: var(--shadow-press);
+    }
+    .option.selected::after {
+      content: "✓";
+      position: absolute;
+      top: 14px; right: 14px;
+      width: 22px; height: 22px;
+      border-radius: var(--r-pill);
+      background: var(--rose);
+      color: #fff;
+      display: grid; place-items: center;
       font-size: 12px;
       font-weight: 900;
     }
 
-    .step.active { color: var(--rose-dark); background: rgba(216, 155, 150, .14); }
-    .step.active .dot { background: var(--rose); color: #fff; }
-    .step.done { color: var(--mint-deep); }
-    .step.done .dot { background: var(--mint-deep); color: #fff; }
-
-    .journey .sep {
-      flex: 0 0 24px;
-      height: 1px;
-      background: linear-gradient(90deg, transparent, var(--line), transparent);
+    .option .glyph {
+      font-size: 32px;
+      line-height: 1;
+      margin-bottom: 12px;
+    }
+    .option strong {
+      display: block;
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: -.005em;
+    }
+    .option small {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
     }
 
-    /* ========== GRID ========== */
-    .grid {
+    /* Likert scale (5-step horizontal) */
+    .likert {
       display: grid;
-      grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr);
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 10px;
+      max-width: 760px;
+      margin: 0 auto;
+    }
+
+    .likert .option {
+      padding: 22px 14px;
+      text-align: center;
+    }
+    .likert .option .glyph { margin: 0 auto 10px; }
+    .likert .option strong { font-size: 14px; }
+    .likert .option small { font-size: 11.5px; }
+
+    .likert-axis {
+      display: flex;
+      justify-content: space-between;
+      max-width: 760px;
+      margin: 12px auto 0;
+      padding: 0 4px;
+      color: var(--muted);
+      font-size: 11px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    @media (max-width: 640px) {
+      .likert { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+      .likert .option { padding: 14px 8px; }
+      .likert .option .glyph { font-size: 24px; margin-bottom: 6px; }
+      .likert .option strong { font-size: 12px; }
+      .likert .option small { display: none; }
+    }
+
+    /* ========== UPLOAD SCENE ========== */
+    .upload-card {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 36px;
+      border-radius: var(--r-xl);
+      background: var(--bg-soft);
+      box-shadow: var(--shadow-soft);
+      border: 1px solid rgba(255, 255, 255, .9);
+    }
+
+    .drop {
+      position: relative;
+      min-height: 380px;
+      border-radius: var(--r-lg);
+      border: 2px dashed rgba(216, 155, 150, .55);
+      background:
+        radial-gradient(ellipse at 30% 20%, rgba(252, 228, 214, .65), transparent 55%),
+        radial-gradient(ellipse at 75% 80%, rgba(197, 221, 209, .55), transparent 55%),
+        #fff;
+      display: grid;
+      place-items: center;
+      padding: 32px;
+      text-align: center;
+      cursor: pointer;
+      transition: all .22s ease;
+    }
+    .drop:hover { border-color: var(--rose); transform: translateY(-2px); box-shadow: var(--shadow-soft); }
+    .drop.dragging { border-color: var(--rose); background-color: rgba(245, 215, 204, .25); }
+
+    .drop-icon {
+      width: 80px; height: 80px;
+      border-radius: var(--r-pill);
+      margin: 0 auto 18px;
+      display: grid; place-items: center;
+      color: #fff;
+      font-size: 30px;
+      background: linear-gradient(135deg, var(--rose), var(--rose-dark));
+      box-shadow: 0 24px 48px rgba(216, 155, 150, .45);
+    }
+
+    .drop strong {
+      display: block;
+      font-size: 19px;
+      margin-bottom: 8px;
+      font-weight: 700;
+    }
+    .drop .hint { color: var(--muted); font-size: 13.5px; }
+
+    .drop img {
+      max-width: 100%;
+      max-height: 380px;
+      border-radius: var(--r-md);
+      object-fit: contain;
+      box-shadow: 0 24px 50px rgba(58, 47, 42, .22);
+    }
+
+    .upload-tips {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .tip {
+      padding: 12px 14px;
+      border-radius: var(--r-md);
+      background: var(--bg-cream);
+      font-size: 12px;
+      color: var(--ink-soft);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--line);
+    }
+    .tip .ico { font-size: 18px; }
+
+    @media (max-width: 640px) {
+      .upload-tips { grid-template-columns: 1fr; }
+    }
+
+    .hidden { display: none !important; }
+
+    /* ========== SCANNING (cinematic) ========== */
+    .scan-stage {
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 50% 30%, rgba(216, 155, 150, .25), transparent 55%),
+        radial-gradient(ellipse at 50% 80%, rgba(197, 221, 209, .15), transparent 55%),
+        linear-gradient(180deg, #1A1410 0%, #2A2018 100%);
+      display: none;
+      place-items: center;
+      z-index: 100;
+      padding: 28px;
+    }
+    .scan-stage.active { display: grid; }
+
+    .scan-canvas {
+      position: relative;
+      width: min(420px, 92vw);
+      aspect-ratio: 1 / 1;
+      border-radius: 50%;
+      overflow: hidden;
+      box-shadow:
+        0 0 80px rgba(216, 155, 150, .4),
+        inset 0 0 0 2px rgba(255, 255, 255, .12);
+      background: #1A1410;
+      animation: scan-pulse 3s ease-in-out infinite;
+    }
+
+    .scan-canvas img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      filter: brightness(.65) saturate(.7) contrast(1.1);
+    }
+
+    .scan-line {
+      position: absolute;
+      left: 0; right: 0;
+      height: 3px;
+      background:
+        linear-gradient(90deg, transparent, var(--rose) 30%, #FFD9C9 50%, var(--rose) 70%, transparent);
+      box-shadow: 0 0 24px var(--rose), 0 0 48px var(--rose-dark);
+      animation: scan-move 2.4s ease-in-out infinite;
+    }
+
+    @keyframes scan-move {
+      0% { top: 0%; }
+      50% { top: calc(100% - 3px); }
+      100% { top: 0%; }
+    }
+
+    @keyframes scan-pulse {
+      0%, 100% { box-shadow: 0 0 60px rgba(216, 155, 150, .35), inset 0 0 0 2px rgba(255, 255, 255, .12); }
+      50% { box-shadow: 0 0 100px rgba(216, 155, 150, .55), inset 0 0 0 2px rgba(255, 255, 255, .2); }
+    }
+
+    .scan-grid {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(0deg, rgba(255, 217, 201, .08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 217, 201, .08) 1px, transparent 1px);
+      background-size: 24px 24px;
+      pointer-events: none;
+    }
+
+    .scan-corners {
+      position: absolute;
+      inset: 14px;
+      pointer-events: none;
+    }
+    .scan-corners::before, .scan-corners::after,
+    .scan-corners > span::before, .scan-corners > span::after {
+      content: "";
+      position: absolute;
+      width: 22px; height: 22px;
+      border: 2px solid #FFD9C9;
+    }
+    .scan-corners::before { top: 0; left: 0; border-right: 0; border-bottom: 0; }
+    .scan-corners::after { top: 0; right: 0; border-left: 0; border-bottom: 0; }
+    .scan-corners > span::before { bottom: 0; left: 0; border-right: 0; border-top: 0; }
+    .scan-corners > span::after { bottom: 0; right: 0; border-left: 0; border-top: 0; }
+
+    .scan-info {
+      margin-top: 36px;
+      text-align: center;
+      max-width: 480px;
+    }
+
+    .scan-info .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 14px;
+      border-radius: var(--r-pill);
+      background: rgba(255, 255, 255, .08);
+      border: 1px solid rgba(255, 255, 255, .1);
+      color: #FFD9C9;
+      font-size: 10px;
+      letter-spacing: .25em;
+      text-transform: uppercase;
+      font-weight: 800;
+    }
+    .scan-info .eyebrow::before {
+      content: "";
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--rose);
+      box-shadow: 0 0 8px var(--rose);
+      animation: blink 1.2s ease-in-out infinite;
+    }
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: .3; }
+    }
+
+    .scan-title {
+      margin: 18px 0 12px;
+      font-size: 26px;
+      color: #fff;
+      font-weight: 700;
+      letter-spacing: -.005em;
+      line-height: 1.3;
+    }
+
+    .scan-status-list {
+      list-style: none;
+      padding: 0;
+      margin: 24px 0 0;
+      display: grid;
+      gap: 8px;
+    }
+
+    .scan-status-list li {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      border-radius: var(--r-md);
+      background: rgba(255, 255, 255, .04);
+      border: 1px solid rgba(255, 255, 255, .06);
+      color: rgba(255, 255, 255, .55);
+      font-size: 13px;
+      font-weight: 500;
+      transition: all .35s ease;
+    }
+    .scan-status-list li.active {
+      background: rgba(216, 155, 150, .12);
+      border-color: rgba(216, 155, 150, .3);
+      color: #FFD9C9;
+    }
+    .scan-status-list li.done {
+      color: rgba(255, 255, 255, .85);
+    }
+
+    .scan-dot {
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, .08);
+      border: 1px solid rgba(255, 255, 255, .15);
+      flex: 0 0 18px;
+      display: grid;
+      place-items: center;
+      font-size: 10px;
+    }
+    .scan-status-list li.active .scan-dot {
+      background: var(--rose);
+      border-color: var(--rose);
+      box-shadow: 0 0 12px var(--rose);
+    }
+    .scan-status-list li.done .scan-dot {
+      background: var(--mint-deep);
+      border-color: var(--mint-deep);
+      color: #fff;
+    }
+    .scan-status-list li.done .scan-dot::after { content: "✓"; }
+
+    .scan-progress {
+      margin-top: 22px;
+      height: 4px;
+      width: 100%;
+      border-radius: var(--r-pill);
+      background: rgba(255, 255, 255, .06);
+      overflow: hidden;
+    }
+    .scan-progress i {
+      display: block;
+      height: 100%;
+      width: 0;
+      background: linear-gradient(90deg, var(--rose), #FFD9C9);
+      box-shadow: 0 0 12px rgba(216, 155, 150, .6);
+      transition: width .4s ease;
+    }
+
+    /* ========== RESULT SCENE ========== */
+    .result-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr);
       gap: 22px;
     }
 
-    .col-stack {
-      display: grid;
-      gap: 22px;
-      align-content: start;
+    @media (max-width: 920px) {
+      .result-grid { grid-template-columns: 1fr; }
     }
 
-    /* ========== CARD ========== */
     .card {
       background: var(--bg-soft);
       border: 1px solid rgba(255, 255, 255, .9);
@@ -330,219 +795,145 @@
       overflow: hidden;
     }
 
-    .card.wide { grid-column: 1 / -1; }
-
     .card-head {
-      padding: 24px 28px 16px;
+      padding: 22px 26px 14px;
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
-      gap: 16px;
+      gap: 14px;
     }
 
     .card-head h2 {
       margin: 0;
-      font-size: 18px;
-      letter-spacing: -.005em;
+      font-size: 17px;
       font-weight: 700;
+      letter-spacing: -.005em;
     }
 
     .card-head .sub {
       margin: 4px 0 0;
       color: var(--muted);
-      font-size: 13px;
+      font-size: 12.5px;
       line-height: 1.6;
     }
 
     .card-head .icon {
-      width: 38px;
-      height: 38px;
+      width: 36px; height: 36px;
       border-radius: var(--r-md);
-      display: grid;
-      place-items: center;
+      display: grid; place-items: center;
       background: linear-gradient(135deg, var(--peach), var(--blush));
       color: var(--rose-dark);
-      flex: 0 0 38px;
-      font-size: 18px;
+      flex: 0 0 36px;
+      font-size: 16px;
     }
 
     .card-body {
-      padding: 12px 28px 28px;
+      padding: 8px 26px 24px;
       display: grid;
-      gap: 18px;
+      gap: 14px;
     }
 
-    .card-actions {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    /* ========== UPLOAD ========== */
-    .drop {
-      position: relative;
-      min-height: 320px;
-      border-radius: var(--r-md);
-      border: 1.5px dashed rgba(216, 155, 150, .55);
-      background:
-        radial-gradient(ellipse at 30% 20%, rgba(252, 228, 214, .65), transparent 55%),
-        radial-gradient(ellipse at 75% 80%, rgba(197, 221, 209, .55), transparent 55%),
-        #fff;
+    /* Skin score gauge */
+    .skin-gauge {
       display: grid;
-      place-items: center;
-      padding: 28px;
-      text-align: center;
-      cursor: pointer;
-      transition: border-color .2s ease, transform .2s ease;
-    }
-    .drop:hover { border-color: var(--rose); transform: translateY(-2px); }
-
-    .drop-icon {
-      width: 64px;
-      height: 64px;
-      border-radius: var(--r-pill);
-      margin: 0 auto 16px;
-      display: grid;
-      place-items: center;
-      color: #fff;
-      font-size: 24px;
-      background: linear-gradient(135deg, var(--rose), var(--rose-dark));
-      box-shadow: 0 18px 36px rgba(216, 155, 150, .4);
-    }
-
-    .drop strong {
-      display: block;
-      font-size: 17px;
-      margin-bottom: 6px;
-      font-weight: 700;
-    }
-
-    .drop span.hint { color: var(--muted); font-size: 13px; }
-
-    .drop img {
-      max-width: 100%;
-      max-height: 320px;
-      border-radius: var(--r-md);
-      object-fit: contain;
-      box-shadow: 0 24px 50px rgba(58, 47, 42, .22);
-    }
-
-    .hidden { display: none !important; }
-
-    /* ========== SURVEY ========== */
-    .survey {
-      display: grid;
-      gap: 12px;
-    }
-
-    .survey-row {
-      padding: 18px 20px;
-      border-radius: var(--r-md);
-      background: var(--bg-cream);
-      display: grid;
-      grid-template-columns: minmax(170px, .55fr) minmax(0, 1fr);
+      grid-template-columns: auto 1fr;
       gap: 18px;
       align-items: center;
+      padding: 20px;
+      border-radius: var(--r-md);
+      background: linear-gradient(135deg, rgba(245, 215, 204, .35), rgba(252, 228, 214, .25));
       border: 1px solid var(--line);
     }
 
-    .survey-row .q strong {
+    .gauge-ring {
+      position: relative;
+      width: 92px; height: 92px;
+    }
+    .gauge-ring svg {
+      width: 100%; height: 100%;
+      transform: rotate(-90deg);
+    }
+    .gauge-ring .track {
+      fill: none;
+      stroke: rgba(216, 155, 150, .2);
+      stroke-width: 8;
+    }
+    .gauge-ring .fill {
+      fill: none;
+      stroke: url(#gaugeGradient);
+      stroke-width: 8;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 1.2s ease;
+    }
+    .gauge-num {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      flex-direction: column;
+    }
+    .gauge-num strong {
       display: block;
-      font-size: 14px;
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--ink);
+      line-height: 1;
+    }
+    .gauge-num small {
+      font-size: 9px;
+      letter-spacing: .15em;
+      text-transform: uppercase;
+      color: var(--muted);
       font-weight: 700;
     }
 
-    .survey-row .q small {
+    .gauge-meta strong {
+      display: block;
+      font-size: 18px;
+      font-weight: 700;
+    }
+    .gauge-meta small {
+      color: var(--muted);
+      font-size: 12.5px;
       display: block;
       margin-top: 4px;
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.5;
+      line-height: 1.55;
     }
 
-    .opts {
-      display: grid;
-      grid-template-columns: repeat(5, minmax(0, 1fr));
-      gap: 6px;
-    }
-    .opts.age { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-
-    .opts input { position: absolute; opacity: 0; pointer-events: none; }
-
-    .opts label {
-      min-height: 42px;
-      border-radius: var(--r-pill);
-      background: #fff;
-      border: 1px solid var(--line);
-      display: grid;
-      place-items: center;
-      cursor: pointer;
-      font-size: 12.5px;
-      font-weight: 600;
-      color: var(--ink-soft);
-      transition: all .18s ease;
-    }
-    .opts label:hover { border-color: var(--rose); transform: translateY(-1px); }
-    .opts input:checked + label {
-      background: var(--ink);
-      color: #fff;
-      border-color: var(--ink);
-    }
-
-    /* ========== METRICS ========== */
     .metrics {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 12px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
     }
 
     .metric {
-      padding: 18px 18px 16px;
+      padding: 14px 14px 12px;
       border-radius: var(--r-md);
       background: var(--bg-cream);
       border: 1px solid var(--line);
       position: relative;
       overflow: hidden;
     }
-
-    .metric::after {
-      content: "";
-      position: absolute;
-      width: 92px; height: 92px;
-      right: -32px; top: -32px;
-      border-radius: var(--r-pill);
-      background: rgba(216, 155, 150, .14);
-    }
-    .metric:nth-child(2)::after { background: rgba(197, 221, 209, .25); }
-    .metric:nth-child(3)::after { background: rgba(201, 168, 117, .18); }
-    .metric:nth-child(4)::after { background: rgba(252, 228, 214, .55); }
-    .metric:nth-child(5)::after { background: rgba(216, 155, 150, .14); }
-    .metric:nth-child(6)::after { background: rgba(197, 221, 209, .25); }
-
     .metric .label {
       color: var(--muted);
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 700;
-      letter-spacing: .1em;
+      letter-spacing: .12em;
       text-transform: uppercase;
     }
-
     .metric .value {
       display: block;
-      margin-top: 8px;
-      font-size: 22px;
+      margin-top: 6px;
+      font-size: 18px;
       font-weight: 700;
-      letter-spacing: -.005em;
     }
-
     .metric .bar {
-      margin-top: 14px;
-      height: 6px;
+      margin-top: 10px;
+      height: 5px;
       border-radius: var(--r-pill);
       background: rgba(139, 124, 115, .15);
       overflow: hidden;
     }
-
     .metric .bar i {
       display: block;
       height: 100%;
@@ -551,37 +942,192 @@
       border-radius: var(--r-pill);
     }
 
-    .marked-image img {
-      width: 100%;
-      border-radius: var(--r-md);
-      border: 1px solid var(--line);
-      box-shadow: 0 18px 40px rgba(58, 47, 42, .12);
+    /* Product list (recommend cards) */
+    .products {
+      display: grid;
+      gap: 10px;
     }
 
-    /* ========== DIAGNOSIS ========== */
+    .product {
+      display: grid;
+      grid-template-columns: 60px 1fr auto;
+      gap: 14px;
+      align-items: center;
+      padding: 14px 16px;
+      border-radius: var(--r-md);
+      background: #fff;
+      border: 1px solid var(--line);
+      transition: all .22s ease;
+    }
+    .product:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-pop);
+      border-color: rgba(216, 155, 150, .45);
+    }
+
+    .product .rank {
+      width: 28px; height: 28px;
+      border-radius: var(--r-pill);
+      background: var(--ink);
+      color: #fff;
+      display: grid; place-items: center;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: -.02em;
+      flex: 0 0 28px;
+    }
+
+    .product img,
+    .product .logo-fallback {
+      width: 56px; height: 56px;
+      border-radius: var(--r-md);
+      object-fit: cover;
+      background: linear-gradient(135deg, var(--blush), var(--peach));
+      border: 1px solid rgba(255, 255, 255, .8);
+    }
+    .product .logo-fallback {
+      display: grid; place-items: center;
+      color: var(--rose-dark);
+      font-weight: 800;
+      font-size: 13px;
+    }
+
+    .product .info { min-width: 0; }
+    .product .info .brand {
+      font-size: 10.5px;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 700;
+    }
+    .product .info .title {
+      display: block;
+      margin: 3px 0 4px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--ink);
+      line-height: 1.4;
+    }
+    .product .reasons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+    .product .reasons .chip {
+      padding: 2px 8px;
+      border-radius: var(--r-pill);
+      background: var(--bg-cream);
+      font-size: 10.5px;
+      color: var(--ink-soft);
+      font-weight: 600;
+    }
+    .product .side {
+      display: grid;
+      gap: 4px;
+      justify-items: end;
+      text-align: right;
+    }
+    .product .match {
+      padding: 4px 11px;
+      border-radius: var(--r-pill);
+      background: linear-gradient(135deg, var(--blush), var(--peach));
+      color: var(--rose-dark);
+      font-weight: 800;
+      font-size: 12px;
+    }
+    .product .price {
+      font-size: 13px;
+      color: var(--ink);
+      font-weight: 700;
+    }
+
+    /* AI counsel CTA card */
+    .counsel-cta {
+      padding: 28px 28px 32px;
+      border-radius: var(--r-lg);
+      background:
+        radial-gradient(ellipse at 80% 0%, rgba(216, 155, 150, .35), transparent 55%),
+        radial-gradient(ellipse at 0% 100%, rgba(197, 221, 209, .35), transparent 55%),
+        #20191A;
+      color: #fff;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .counsel-cta::before {
+      content: "✦";
+      position: absolute;
+      top: 18px;
+      right: 22px;
+      font-size: 22px;
+      color: rgba(255, 217, 201, .4);
+    }
+
+    .counsel-cta .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 12px;
+      border-radius: var(--r-pill);
+      background: rgba(255, 255, 255, .12);
+      color: #FFD9C9;
+      font-size: 10.5px;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      font-weight: 800;
+    }
+
+    .counsel-cta h3 {
+      margin: 14px 0 8px;
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -.005em;
+    }
+    .counsel-cta h3 .ornament {
+      font-family: "Cormorant Garamond", serif;
+      font-style: italic;
+      color: #FFD9C9;
+      font-weight: 500;
+    }
+    .counsel-cta p {
+      margin: 0 0 18px;
+      color: rgba(255, 255, 255, .7);
+      font-size: 13.5px;
+      line-height: 1.7;
+    }
+
+    .counsel-cta .btn {
+      background: linear-gradient(135deg, var(--rose), #FFB8A8);
+      color: #20191A;
+      box-shadow: 0 16px 30px rgba(216, 155, 150, .35);
+    }
+    .counsel-cta .btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 22px 40px rgba(216, 155, 150, .5);
+    }
+
+    /* AI diagnosis card (full report) */
     .diag {
       display: grid;
       gap: 18px;
     }
 
     .diag-headline {
-      padding: 22px 24px;
+      padding: 24px 26px;
       border-radius: var(--r-md);
       background: linear-gradient(135deg, var(--blush) 0%, var(--peach) 100%);
       color: var(--ink);
       position: relative;
       overflow: hidden;
     }
-
     .diag-headline::before {
       content: "✦";
       position: absolute;
-      right: 22px;
-      top: 16px;
+      right: 24px;
+      top: 18px;
       font-size: 16px;
       color: rgba(58, 47, 42, .35);
     }
-
     .diag-headline .quote {
       font-family: "Cormorant Garamond", "Noto Serif KR", serif;
       font-style: italic;
@@ -590,7 +1136,6 @@
       margin: 0;
       letter-spacing: -.005em;
     }
-
     .diag-headline .summary {
       margin: 12px 0 0;
       font-size: 14px;
@@ -603,7 +1148,6 @@
       flex-wrap: wrap;
       gap: 8px;
     }
-
     .chip {
       padding: 7px 14px;
       border-radius: var(--r-pill);
@@ -613,30 +1157,32 @@
       font-weight: 600;
       color: var(--ink-soft);
     }
-
     .chip.rose { background: var(--blush); border-color: transparent; color: var(--rose-dark); }
     .chip.mint { background: var(--mint); border-color: transparent; color: #4F7C6A; }
     .chip.gold { background: rgba(201, 168, 117, .22); border-color: transparent; color: #8A7544; }
+
+    .routine-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+    @media (max-width: 720px) { .routine-grid { grid-template-columns: 1fr; } }
 
     .routine-col {
       padding: 18px 20px;
       border-radius: var(--r-md);
       background: var(--bg-cream);
       border: 1px solid var(--line);
+      counter-reset: step;
     }
-
     .routine-col h3 {
       margin: 0 0 12px;
-      font-size: 13px;
+      font-size: 12.5px;
       letter-spacing: .12em;
       text-transform: uppercase;
       color: var(--rose-dark);
       font-weight: 800;
-      display: flex;
-      align-items: center;
-      gap: 8px;
     }
-
     .routine-col.evening h3 { color: #6B6691; }
 
     .routine-list {
@@ -646,16 +1192,14 @@
       display: grid;
       gap: 10px;
     }
-
     .routine-list li {
       position: relative;
       padding-left: 30px;
-      font-size: 13.5px;
+      font-size: 13px;
       line-height: 1.6;
       color: var(--ink-soft);
       counter-increment: step;
     }
-
     .routine-list li::before {
       content: counter(step);
       position: absolute;
@@ -664,21 +1208,12 @@
       border-radius: var(--r-pill);
       background: #fff;
       color: var(--rose-dark);
-      display: grid;
-      place-items: center;
+      display: grid; place-items: center;
       font-size: 11px;
       font-weight: 800;
       box-shadow: 0 4px 10px rgba(184, 138, 122, .14);
     }
-
-    .routine-col { counter-reset: step; }
     .routine-col.evening .routine-list li::before { color: #6B6691; }
-
-    .routine-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 12px;
-    }
 
     .ingredient-block {
       padding: 16px 18px;
@@ -686,18 +1221,51 @@
       background: #fff;
       border: 1px solid var(--line);
     }
-
     .ingredient-block h4 {
       margin: 0 0 10px;
-      font-size: 12.5px;
-      letter-spacing: .08em;
+      font-size: 11.5px;
+      letter-spacing: .1em;
       text-transform: uppercase;
       color: var(--muted);
       font-weight: 800;
     }
 
-    /* ========== HISTORY ========== */
-    .history {
+    /* History sheet */
+    .history-sheet {
+      position: fixed;
+      inset: 0;
+      background: rgba(26, 20, 16, .55);
+      backdrop-filter: blur(6px);
+      display: none;
+      place-items: center;
+      z-index: 200;
+      padding: 28px;
+    }
+    .history-sheet.open { display: grid; }
+
+    .history-panel {
+      width: 100%;
+      max-width: 520px;
+      background: var(--bg-soft);
+      border-radius: var(--r-xl);
+      box-shadow: 0 40px 80px rgba(0,0,0,.3);
+      max-height: 80vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .history-head {
+      padding: 22px 26px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--line);
+    }
+    .history-head h2 { margin: 0; font-size: 18px; }
+    .history-head small { color: var(--muted); font-size: 12px; }
+    .history-body {
+      padding: 18px 22px 22px;
+      overflow-y: auto;
       display: grid;
       gap: 8px;
     }
@@ -713,141 +1281,35 @@
       border: 1px solid var(--line);
       width: 100%;
       text-align: left;
-      transition: transform .18s ease, box-shadow .18s ease;
+      transition: all .18s ease;
     }
+    .history-item:hover { transform: translateY(-1px); border-color: var(--rose); }
+    .history-item.active { border-color: var(--rose); background: linear-gradient(135deg, rgba(245, 215, 204, .35), #fff); }
+    .history-item .meta strong { display: block; font-size: 14px; }
+    .history-item .meta small { color: var(--muted); font-size: 11.5px; }
+    .history-item .badge { padding: 4px 10px; border-radius: var(--r-pill); background: var(--bg-cream); color: var(--ink-soft); font-size: 11px; font-weight: 700; }
 
-    .history-item:hover { transform: translateY(-2px); box-shadow: var(--shadow-soft); }
-
-    .history-item.active {
-      border-color: var(--rose);
-      background: linear-gradient(135deg, rgba(245, 215, 204, .35), #fff);
-    }
-
-    .history-item .meta strong {
-      display: block;
-      font-size: 14px;
-      font-weight: 700;
-    }
-
-    .history-item .meta small { color: var(--muted); font-size: 12px; }
-
-    .history-item .badge {
-      padding: 4px 10px;
+    /* Toast / status */
+    .toast {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      padding: 12px 22px;
       border-radius: var(--r-pill);
-      background: var(--bg-cream);
-      color: var(--ink-soft);
-      font-size: 11px;
-      font-weight: 700;
-    }
-
-    /* ========== PRODUCTS ========== */
-    .products {
-      display: grid;
-      gap: 12px;
-    }
-
-    .product {
-      display: grid;
-      grid-template-columns: 64px 1fr auto;
-      gap: 16px;
-      align-items: center;
-      padding: 16px 18px;
-      border-radius: var(--r-md);
-      background: #fff;
-      border: 1px solid var(--line);
-      transition: transform .18s ease, box-shadow .18s ease;
-    }
-
-    .product:hover { transform: translateY(-2px); box-shadow: var(--shadow-pop); }
-
-    .product img,
-    .product .logo-fallback {
-      width: 64px;
-      height: 64px;
-      border-radius: var(--r-md);
-      object-fit: cover;
-      background: linear-gradient(135deg, var(--blush), var(--peach));
-      border: 1px solid rgba(255, 255, 255, .8);
-    }
-
-    .product .logo-fallback {
-      display: grid;
-      place-items: center;
-      color: var(--rose-dark);
-      font-weight: 800;
-      font-size: 14px;
-    }
-
-    .product .info { min-width: 0; }
-
-    .product .info .brand {
-      font-size: 11px;
-      letter-spacing: .14em;
-      text-transform: uppercase;
-      color: var(--muted);
-      font-weight: 700;
-    }
-
-    .product .info .title {
-      display: block;
-      margin: 4px 0 6px;
-      font-size: 15px;
-      font-weight: 600;
-      color: var(--ink);
-      line-height: 1.4;
-    }
-
-    .product .reasons {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 4px;
-    }
-
-    .product .reasons .chip {
-      padding: 3px 9px;
-      font-size: 11px;
-      background: var(--bg-cream);
-    }
-
-    .product .side {
-      display: grid;
-      gap: 6px;
-      justify-items: end;
-      text-align: right;
-    }
-
-    .product .match {
-      display: inline-flex;
-      align-items: baseline;
-      gap: 2px;
-      padding: 6px 12px;
-      border-radius: var(--r-pill);
-      background: linear-gradient(135deg, var(--blush), var(--peach));
-      color: var(--rose-dark);
-      font-weight: 800;
+      background: var(--ink);
+      color: #fff;
       font-size: 13px;
+      box-shadow: 0 20px 40px rgba(0,0,0,.25);
+      z-index: 300;
+      transition: transform .35s cubic-bezier(.22,.86,.34,1);
+      max-width: 90vw;
     }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+    .toast.error { background: #B66B7A; }
+    .toast.success { background: var(--mint-deep); }
 
-    .product .match small {
-      font-size: 10px;
-      opacity: .7;
-    }
-
-    .product .price {
-      font-size: 14px;
-      color: var(--ink);
-      font-weight: 700;
-    }
-
-    /* ========== STATUS / EMPTY / LOADING ========== */
-    .status {
-      min-height: 22px;
-      font-size: 13px;
-      color: var(--muted);
-    }
-    .status.error { color: #B66B7A; }
-    .status.success { color: var(--mint-deep); }
-
+    /* Empty state */
     .empty {
       padding: 28px;
       text-align: center;
@@ -857,7 +1319,6 @@
       font-size: 13.5px;
       line-height: 1.7;
     }
-
     .empty .ico {
       display: block;
       font-size: 30px;
@@ -865,256 +1326,332 @@
       opacity: .55;
     }
 
-    .loader {
-      padding: 36px 24px;
-      text-align: center;
-      border-radius: var(--r-md);
-      background: linear-gradient(135deg, rgba(245, 215, 204, .4), rgba(197, 221, 209, .35));
-    }
-
-    .spinner {
-      width: 42px;
-      height: 42px;
-      margin: 0 auto 14px;
-      border-radius: var(--r-pill);
-      border: 3px solid rgba(216, 155, 150, .25);
-      border-top-color: var(--rose);
-      animation: spin .85s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    .loader strong {
-      display: block;
-      font-size: 15px;
-      margin-bottom: 4px;
-    }
-    .loader p { margin: 0; color: var(--muted); font-size: 13px; }
-
-    /* ========== RESPONSIVE ========== */
-    @media (max-width: 980px) {
-      .grid { grid-template-columns: 1fr; }
-      h1.hero-title { font-size: 36px; }
-      .hero { padding: 48px 32px; }
-      .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .routine-grid { grid-template-columns: 1fr; }
-      .topnav { display: none; }
-    }
-
-    @media (max-width: 640px) {
+    @media (max-width: 720px) {
       .app { padding: 20px 14px 64px; }
-      .hero { padding: 40px 22px; }
-      h1.hero-title { font-size: 28px; }
-      .card-head, .card-body { padding-left: 20px; padding-right: 20px; }
-      .survey-row { grid-template-columns: 1fr; }
-      .opts, .opts.age { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-      .product { grid-template-columns: 48px 1fr; }
-      .product .side { grid-column: 1 / -1; flex-direction: row; justify-items: stretch; display: flex; justify-content: space-between; }
-      .journey { gap: 6px; padding: 10px 14px; }
-      .journey .sep { display: none; }
+      .hero-card { padding: 56px 28px; }
+      h1.hero-mega { font-size: 38px; }
+      h1.scene-title { font-size: 28px; }
+      .upload-card { padding: 22px; }
     }
   </style>
 </head>
 <body>
   <div class="app">
     <header class="topbar">
-      <div class="brand">
+      <div class="brand" id="home-link">
         <div class="brand-mark">SC</div>
         <div class="brand-text">
           <strong>Skin Curator</strong>
-          <small>AI · K-beauty</small>
+          <small>AI · K-beauty Diagnosis</small>
         </div>
       </div>
-      <nav class="topnav" aria-label="primary">
-        <a class="active" href="#analysis">분석</a>
-        <a href="#diagnosis">진단</a>
-        <a href="#recommend">추천</a>
-        <a href="#history">이력</a>
-      </nav>
     </header>
 
-    <section class="hero">
-      <span class="eyebrow">AI Skin Diagnosis · K-Beauty Curation</span>
-      <h1 class="hero-title">
-        오늘 당신의 피부에<br>
-        딱 맞는 <em>케어 루틴</em>과<br>
-        <span class="ornament">cosmetic curation.</span>
-      </h1>
-      <p class="hero-sub">얼굴 사진 한 장으로 피부 타입·수분·모공·색소·입술 건조도까지 읽어내고, AI 카운슬러가 모닝/이브닝 루틴과 맞춤 화장품을 골라드려요.</p>
-      <div class="hero-actions">
-        <a class="btn primary" href="#analysis">분석 시작하기 ✨</a>
-        <button class="btn ghost" id="history-button" type="button">이력 새로고침</button>
+    <!-- STEPPER -->
+    <div class="stepper" id="stepper">
+      <div class="step-pill" data-step="survey-age">
+        <span class="num">1</span><span class="label-mini">설문</span>
       </div>
-    </section>
-
-    <div class="journey" aria-label="진행 단계">
-      <div class="step active" data-stage="upload">
-        <span class="dot">1</span>
-        <span>이미지 업로드</span>
+      <div class="step-pill" data-step="upload">
+        <span class="num">2</span><span class="label-mini">업로드</span>
       </div>
-      <div class="sep"></div>
-      <div class="step" data-stage="analysis">
-        <span class="dot">2</span>
-        <span>피부 분석</span>
+      <div class="step-pill" data-step="scanning">
+        <span class="num">3</span><span class="label-mini">분석</span>
       </div>
-      <div class="sep"></div>
-      <div class="step" data-stage="recommend">
-        <span class="dot">3</span>
-        <span>맞춤 추천</span>
+      <div class="step-pill" data-step="result">
+        <span class="num">4</span><span class="label-mini">추천</span>
       </div>
-      <div class="status" id="status" style="margin-left:auto;"></div>
+      <div class="step-pill" data-step="diagnosis">
+        <span class="num">5</span><span class="label-mini">AI 진단</span>
+      </div>
     </div>
 
-    <div class="grid" id="analysis">
-      <!-- LEFT: upload + survey -->
-      <div class="col-stack">
-        <section class="card">
-          <div class="card-head">
-            <div>
-              <h2>피부 사진 업로드</h2>
-              <p class="sub">정면 얼굴 사진을 선택하거나 드래그해서 올려주세요.</p>
-            </div>
-            <div class="icon">📸</div>
-          </div>
-          <div class="card-body">
-            <label class="drop" for="image-input" id="drop-zone">
-              <input class="hidden" id="image-input" type="file" accept="image/*">
-              <div id="preview-empty">
-                <div class="drop-icon">+</div>
-                <strong>얼굴 이미지 업로드</strong>
-                <span class="hint">JPG · PNG · 권장 정면 사진</span>
-              </div>
-              <img class="hidden" id="preview" alt="선택한 이미지 미리보기">
-            </label>
-            <div class="card-actions">
-              <button class="btn rose" id="analyze-button" type="button">피부 분석 실행 ✨</button>
-            </div>
-          </div>
-        </section>
+    <main class="stage">
 
-        <section class="card">
-          <div class="card-head">
-            <div>
-              <h2>피부 설문</h2>
-              <p class="sub">분석 결과와 함께 추천에 반영돼요.</p>
-            </div>
-            <div class="icon" style="background:linear-gradient(135deg,var(--mint),var(--peach));color:#4F7C6A;">🌿</div>
+      <!-- WELCOME -->
+      <section class="scene active" data-scene="welcome">
+        <div class="hero-card">
+          <span class="scene-eyebrow">AI Skin Diagnosis · K-Beauty Curation</span>
+          <h1 class="hero-mega">
+            당신의 피부를<br>
+            정밀하게 <span class="ornament">큐레이션</span>합니다.
+          </h1>
+          <p class="hero-tagline">설문 4문항 · 사진 1장 · AI 모델 5종 · 가중치 코사인 유사도로 만나는 맞춤 화장품 추천.</p>
+          <button class="btn rose" id="welcome-start" type="button">
+            진단 시작하기
+            <span class="arrow">→</span>
+          </button>
+          <div class="hero-stats">
+            <span class="stat-chip">🔬 <strong>5</strong>개 ResNeXt 모델</span>
+            <span class="stat-chip">💎 <strong>571</strong>개 화장품 매칭</span>
+            <span class="stat-chip">✦ AI 카운셀러 진단</span>
           </div>
-          <div class="card-body">
-            <div class="survey">
-              <div class="survey-row">
-                <div class="q"><strong>연령대</strong><small>제품 데이터의 연령 선호와 매칭</small></div>
-                <div class="opts age">
-                  <input id="age-teens" name="age-group" type="radio" value="teens"><label for="age-teens">10대</label>
-                  <input id="age-twenties" name="age-group" type="radio" value="twenties" checked><label for="age-twenties">20대</label>
-                  <input id="age-thirties" name="age-group" type="radio" value="thirties"><label for="age-thirties">30대</label>
-                  <input id="age-forties" name="age-group" type="radio" value="forties_above"><label for="age-forties">40+</label>
-                </div>
-              </div>
-
-              <div class="survey-row">
-                <div class="q"><strong>아토피 민감도</strong><small>현재 체감 정도</small></div>
-                <div class="opts">
-                  <input id="atopy-1" name="atopy" type="radio" value="1"><label for="atopy-1">1</label>
-                  <input id="atopy-2" name="atopy" type="radio" value="2"><label for="atopy-2">2</label>
-                  <input id="atopy-3" name="atopy" type="radio" value="3" checked><label for="atopy-3">3</label>
-                  <input id="atopy-4" name="atopy" type="radio" value="4"><label for="atopy-4">4</label>
-                  <input id="atopy-5" name="atopy" type="radio" value="5"><label for="atopy-5">5</label>
-                </div>
-              </div>
-
-              <div class="survey-row">
-                <div class="q"><strong>트러블 정도</strong><small>여드름·붉은 트러블 강도</small></div>
-                <div class="opts">
-                  <input id="acne-1" name="acne" type="radio" value="1"><label for="acne-1">1</label>
-                  <input id="acne-2" name="acne" type="radio" value="2"><label for="acne-2">2</label>
-                  <input id="acne-3" name="acne" type="radio" value="3" checked><label for="acne-3">3</label>
-                  <input id="acne-4" name="acne" type="radio" value="4"><label for="acne-4">4</label>
-                  <input id="acne-5" name="acne" type="radio" value="5"><label for="acne-5">5</label>
-                </div>
-              </div>
-
-              <div class="survey-row">
-                <div class="q"><strong>피부 민감도</strong><small>자극에 반응하는 정도</small></div>
-                <div class="opts">
-                  <input id="sensitivity-1" name="sensitivity" type="radio" value="1"><label for="sensitivity-1">1</label>
-                  <input id="sensitivity-2" name="sensitivity" type="radio" value="2"><label for="sensitivity-2">2</label>
-                  <input id="sensitivity-3" name="sensitivity" type="radio" value="3" checked><label for="sensitivity-3">3</label>
-                  <input id="sensitivity-4" name="sensitivity" type="radio" value="4"><label for="sensitivity-4">4</label>
-                  <input id="sensitivity-5" name="sensitivity" type="radio" value="5"><label for="sensitivity-5">5</label>
-                </div>
-              </div>
-            </div>
-            <div class="card-actions">
-              <button class="btn soft" id="survey-button" type="button">설문 저장</button>
-            </div>
-          </div>
-        </section>
-      </div>
-
-      <!-- RIGHT: result + actions -->
-      <div class="col-stack">
-        <section class="card" id="analysis-result">
-          <div class="card-head">
-            <div>
-              <h2>피부 분석 리포트</h2>
-              <p class="sub">확률이 높을수록 바가 길게 표시돼요.</p>
-            </div>
-            <div class="icon">🔬</div>
-          </div>
-          <div class="card-body">
-            <div class="metrics" id="metrics"></div>
-            <div class="marked-image" id="marked-image"></div>
-            <div class="card-actions">
-              <button class="btn primary" id="diagnosis-button" type="button">AI 진단 받기 ✦</button>
-              <button class="btn rose" id="recommend-button" type="button">맞춤 화장품 보기</button>
-            </div>
-          </div>
-        </section>
-
-        <section class="card" id="history">
-          <div class="card-head">
-            <div>
-              <h2>나의 진단 이력</h2>
-              <p class="sub">저장된 분석을 클릭하면 다시 볼 수 있어요.</p>
-            </div>
-            <div class="icon" style="background:linear-gradient(135deg,var(--sand),var(--mint));color:#4F7C6A;">📋</div>
-          </div>
-          <div class="card-body">
-            <div class="history" id="history-list"></div>
-          </div>
-        </section>
-      </div>
-
-      <!-- WIDE: AI diagnosis -->
-      <section class="card wide" id="diagnosis">
-        <div class="card-head">
-          <div>
-            <h2>AI 카운슬러의 진단</h2>
-            <p class="sub">분석 결과를 K-뷰티 카운슬러 톤으로 정리한 맞춤 케어 가이드.</p>
-          </div>
-          <div class="icon" style="background:linear-gradient(135deg,var(--blush),var(--rose));color:#fff;">✦</div>
-        </div>
-        <div class="card-body">
-          <div id="diagnosis-text"></div>
         </div>
       </section>
 
-      <!-- WIDE: Recommendations -->
-      <section class="card wide" id="recommend">
-        <div class="card-head">
-          <div>
-            <h2>당신을 위한 화장품</h2>
-            <p class="sub">피부 신호와 설문을 함께 반영한 매칭 결과예요.</p>
-          </div>
-          <div class="icon" style="background:linear-gradient(135deg,var(--gold),var(--peach));color:#fff;">💎</div>
+      <!-- SURVEY: AGE -->
+      <section class="scene" data-scene="survey-age">
+        <div class="scene-head">
+          <span class="scene-eyebrow">Step 1 of 4 · 설문</span>
+          <h1 class="scene-title">먼저, <span class="ornament">연령대</span>를 알려주세요</h1>
+          <p class="scene-sub">제품 데이터의 연령대 선호 패턴을 함께 반영해 더 정밀한 추천을 만들어요.</p>
         </div>
-        <div class="card-body">
-          <div class="products" id="product-list"></div>
+        <div class="options cols-4" id="age-options">
+          <button class="option" data-key="age-group" data-value="teens" type="button">
+            <div class="glyph">🌱</div>
+            <strong>10대</strong>
+            <small>밸런스 케어</small>
+          </button>
+          <button class="option selected" data-key="age-group" data-value="twenties" type="button">
+            <div class="glyph">🌸</div>
+            <strong>20대</strong>
+            <small>예방 + 기본 케어</small>
+          </button>
+          <button class="option" data-key="age-group" data-value="thirties" type="button">
+            <div class="glyph">🌷</div>
+            <strong>30대</strong>
+            <small>안티에이징 시작</small>
+          </button>
+          <button class="option" data-key="age-group" data-value="forties_above" type="button">
+            <div class="glyph">🌹</div>
+            <strong>40대 이상</strong>
+            <small>탄력 · 영양 집중</small>
+          </button>
+        </div>
+        <div class="step-nav">
+          <button class="btn text" data-action="back" type="button">← 처음으로</button>
+          <button class="btn primary" data-action="next" type="button">다음 <span class="arrow">→</span></button>
         </div>
       </section>
+
+      <!-- SURVEY: ATOPY -->
+      <section class="scene" data-scene="survey-atopy">
+        <div class="scene-head">
+          <span class="scene-eyebrow">Step 2 of 4 · 설문</span>
+          <h1 class="scene-title"><span class="ornament">아토피</span> 민감도는 어느 정도인가요?</h1>
+          <p class="scene-sub">현재 체감하는 정도를 골라주세요. 진단 결과에 영향을 줍니다.</p>
+        </div>
+        <div class="likert" id="atopy-options">
+          <button class="option" data-key="atopy" data-value="1" type="button"><div class="glyph">😌</div><strong>거의 없음</strong><small>안정 상태</small></button>
+          <button class="option" data-key="atopy" data-value="2" type="button"><div class="glyph">🙂</div><strong>가끔</strong><small>드물게 느껴짐</small></button>
+          <button class="option selected" data-key="atopy" data-value="3" type="button"><div class="glyph">😐</div><strong>보통</strong><small>주기적으로 발생</small></button>
+          <button class="option" data-key="atopy" data-value="4" type="button"><div class="glyph">😟</div><strong>자주</strong><small>일상에 영향</small></button>
+          <button class="option" data-key="atopy" data-value="5" type="button"><div class="glyph">😣</div><strong>매우 자주</strong><small>관리가 필요</small></button>
+        </div>
+        <div class="likert-axis">
+          <span>← 안정</span>
+          <span>심함 →</span>
+        </div>
+        <div class="step-nav">
+          <button class="btn text" data-action="back" type="button">← 이전</button>
+          <button class="btn primary" data-action="next" type="button">다음 <span class="arrow">→</span></button>
+        </div>
+      </section>
+
+      <!-- SURVEY: ACNE -->
+      <section class="scene" data-scene="survey-acne">
+        <div class="scene-head">
+          <span class="scene-eyebrow">Step 3 of 4 · 설문</span>
+          <h1 class="scene-title"><span class="ornament">트러블</span>·여드름 정도는?</h1>
+          <p class="scene-sub">붉은 트러블, 화이트 헤드, 여드름의 강도를 평가해 주세요.</p>
+        </div>
+        <div class="likert" id="acne-options">
+          <button class="option" data-key="acne" data-value="1" type="button"><div class="glyph">✨</div><strong>매끄러움</strong><small>거의 없음</small></button>
+          <button class="option" data-key="acne" data-value="2" type="button"><div class="glyph">🌟</div><strong>가끔</strong><small>한 두 개</small></button>
+          <button class="option selected" data-key="acne" data-value="3" type="button"><div class="glyph">⭐</div><strong>보통</strong><small>주기적</small></button>
+          <button class="option" data-key="acne" data-value="4" type="button"><div class="glyph">💫</div><strong>자주</strong><small>여러 부위</small></button>
+          <button class="option" data-key="acne" data-value="5" type="button"><div class="glyph">🔥</div><strong>심함</strong><small>지속적</small></button>
+        </div>
+        <div class="likert-axis">
+          <span>← 매끄러움</span>
+          <span>심함 →</span>
+        </div>
+        <div class="step-nav">
+          <button class="btn text" data-action="back" type="button">← 이전</button>
+          <button class="btn primary" data-action="next" type="button">다음 <span class="arrow">→</span></button>
+        </div>
+      </section>
+
+      <!-- SURVEY: SENSITIVITY -->
+      <section class="scene" data-scene="survey-sensitivity">
+        <div class="scene-head">
+          <span class="scene-eyebrow">Step 4 of 4 · 설문</span>
+          <h1 class="scene-title">피부 <span class="ornament">민감도</span>는 어떤가요?</h1>
+          <p class="scene-sub">자극에 반응하는 정도. 새 제품을 써봤을 때 따끔하거나 붉어지는 빈도를 떠올려 주세요.</p>
+        </div>
+        <div class="likert" id="sensitivity-options">
+          <button class="option" data-key="sensitivity" data-value="1" type="button"><div class="glyph">🛡️</div><strong>둔감</strong><small>웬만해선 안전</small></button>
+          <button class="option" data-key="sensitivity" data-value="2" type="button"><div class="glyph">🍀</div><strong>약간 둔감</strong><small>거의 무난</small></button>
+          <button class="option selected" data-key="sensitivity" data-value="3" type="button"><div class="glyph">🌿</div><strong>보통</strong><small>일반적인 수준</small></button>
+          <button class="option" data-key="sensitivity" data-value="4" type="button"><div class="glyph">🌶️</div><strong>예민</strong><small>자극에 약함</small></button>
+          <button class="option" data-key="sensitivity" data-value="5" type="button"><div class="glyph">⚠️</div><strong>매우 예민</strong><small>고민감 피부</small></button>
+        </div>
+        <div class="likert-axis">
+          <span>← 둔감</span>
+          <span>예민 →</span>
+        </div>
+        <div class="step-nav">
+          <button class="btn text" data-action="back" type="button">← 이전</button>
+          <button class="btn primary" data-action="next" type="button">설문 완료 <span class="arrow">→</span></button>
+        </div>
+      </section>
+
+      <!-- UPLOAD -->
+      <section class="scene" data-scene="upload">
+        <div class="scene-head">
+          <span class="scene-eyebrow">설문 완료 · 사진 업로드</span>
+          <h1 class="scene-title">이제 <span class="ornament">정면 얼굴 사진</span>을 올려주세요</h1>
+          <p class="scene-sub">AI 모델이 이마·양볼·입술 영역을 자동으로 추출해 5가지 지표를 추론합니다.</p>
+        </div>
+        <div class="upload-card">
+          <label class="drop" for="image-input" id="drop-zone">
+            <input class="hidden" id="image-input" type="file" accept="image/*">
+            <div id="preview-empty">
+              <div class="drop-icon">+</div>
+              <strong>얼굴 이미지 업로드</strong>
+              <span class="hint">JPG · PNG · 또는 클릭해서 선택</span>
+            </div>
+            <img class="hidden" id="preview" alt="선택한 이미지 미리보기">
+          </label>
+          <div class="upload-tips">
+            <div class="tip"><span class="ico">📐</span>정면 얼굴, 상반신 위주</div>
+            <div class="tip"><span class="ico">💡</span>자연광 또는 균일한 조명</div>
+            <div class="tip"><span class="ico">🚫</span>마스크 · 안경 · 가림 X</div>
+          </div>
+        </div>
+        <div class="step-nav">
+          <button class="btn text" data-action="back" type="button">← 이전</button>
+          <button class="btn rose" id="start-analysis" type="button" disabled>
+            AI 분석 시작 ✨
+            <span class="arrow">→</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- RESULT (placeholder, JS fills) -->
+      <section class="scene" data-scene="result">
+        <div class="scene-head">
+          <span class="scene-eyebrow">분석 완료 · 맞춤 화장품 큐레이션</span>
+          <h1 class="scene-title">당신을 위한 <span class="ornament">베스트 매칭</span></h1>
+          <p class="scene-sub">피부 신호와 설문을 함께 반영한 가중치 코사인 유사도 결과예요.</p>
+        </div>
+
+        <div class="result-grid">
+          <div style="display:grid; gap:18px;">
+            <div class="card">
+              <div class="card-head">
+                <div>
+                  <h2>💎 추천 화장품 TOP</h2>
+                  <p class="sub">매치 % 와 매칭 이유를 함께 보여드려요.</p>
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="products" id="product-list"></div>
+              </div>
+            </div>
+
+            <div class="counsel-cta" id="counsel-cta">
+              <span class="eyebrow">✦ AI Counselor</span>
+              <h3>지금 받은 추천이 <span class="ornament">왜</span> 나에게 맞을까?</h3>
+              <p>K-뷰티 카운슬러 톤의 AI가 분석 결과를 읽고 모닝/이브닝 루틴, 추천 성분, 생활 팁까지 정리해 드려요.</p>
+              <button class="btn" id="diagnosis-button" type="button">
+                AI 카운셀러 진단 받기
+                <span class="arrow">→</span>
+              </button>
+            </div>
+          </div>
+
+          <div style="display:grid; gap:18px; align-content:start;">
+            <div class="card">
+              <div class="card-head">
+                <div>
+                  <h2>🔬 피부 분석 리포트</h2>
+                  <p class="sub">5종 모델 추론 결과</p>
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="skin-gauge" id="skin-gauge"></div>
+                <div class="metrics" id="metrics"></div>
+              </div>
+            </div>
+            <div class="card" id="marked-card" style="display:none;">
+              <div class="card-head">
+                <div>
+                  <h2>🗺️ 검출된 얼굴 영역</h2>
+                  <p class="sub">MediaPipe FaceMesh 468개 랜드마크</p>
+                </div>
+              </div>
+              <div class="card-body">
+                <div id="marked-image" style="border-radius:var(--r-md); overflow:hidden;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="step-nav">
+          <button class="btn ghost" id="restart-button" type="button">← 처음부터 다시</button>
+          <button class="btn primary" id="diagnosis-button-2" type="button">AI 진단 받기 <span class="arrow">→</span></button>
+        </div>
+      </section>
+
+      <!-- AI DIAGNOSIS -->
+      <section class="scene" data-scene="diagnosis">
+        <div class="scene-head">
+          <span class="scene-eyebrow">AI Counselor · 진단 리포트</span>
+          <h1 class="scene-title"><span class="ornament">"오늘의 피부"</span> 케어 가이드</h1>
+          <p class="scene-sub">AI 카운슬러가 분석 결과를 K-뷰티 톤으로 정리한 종합 리포트입니다.</p>
+        </div>
+        <div class="card" style="max-width:880px; margin:0 auto;">
+          <div class="card-body">
+            <div id="diagnosis-text"></div>
+          </div>
+        </div>
+        <div class="step-nav">
+          <button class="btn ghost" id="back-to-result" type="button">← 추천으로 돌아가기</button>
+          <button class="btn primary" id="restart-button-2" type="button">처음부터 다시 ↻</button>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- SCANNING OVERLAY -->
+  <div class="scan-stage" id="scan-stage">
+    <div>
+      <div class="scan-canvas" id="scan-canvas">
+        <img id="scan-image" alt="">
+        <div class="scan-grid"></div>
+        <div class="scan-line"></div>
+        <div class="scan-corners"><span></span></div>
+      </div>
+      <div class="scan-info">
+        <span class="eyebrow">SCANNING</span>
+        <h2 class="scan-title" id="scan-title">얼굴 영역을 감지하는 중</h2>
+        <ul class="scan-status-list" id="scan-status-list">
+          <li data-key="face"><span class="scan-dot"></span><span>얼굴 영역 감지 (MediaPipe FaceMesh)</span></li>
+          <li data-key="crop"><span class="scan-dot"></span><span>이마 · 볼 · 입술 영역 추출</span></li>
+          <li data-key="skin"><span class="scan-dot"></span><span>피부 타입 분류 (ResNeXt-50)</span></li>
+          <li data-key="moisture"><span class="scan-dot"></span><span>수분 · 색소침착 측정</span></li>
+          <li data-key="recommend"><span class="scan-dot"></span><span>화장품 매칭 (가중치 코사인 유사도)</span></li>
+        </ul>
+        <div class="scan-progress"><i id="scan-bar"></i></div>
+      </div>
     </div>
   </div>
 
-  <script src="{% static 'js/dashboard.js' %}?v=20260509-kmodern" defer></script>
+  <!-- SVG GRADIENT -->
+  <svg width="0" height="0" style="position:absolute;">
+    <defs>
+      <linearGradient id="gaugeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" stop-color="#D89B96"/>
+        <stop offset="100%" stop-color="#C9A875"/>
+      </linearGradient>
+    </defs>
+  </svg>
+
+  <!-- TOAST -->
+  <div class="toast" id="toast"></div>
+
+  <script src="{% static 'js/dashboard.js' %}?v=20260509-wizard" defer></script>
 </body>
 </html>
