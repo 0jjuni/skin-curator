@@ -1,0 +1,3 @@
+# Placeholder so the weights/ directory exists in deployments.
+# Actual ResNeXt-50 *.pth files are gitignored — download them from
+# the Google Drive link in the README and place them in this folder.

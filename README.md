@@ -265,10 +265,10 @@ git push space main
 
 ### 3. 가중치 5개 업로드 (필수)
 
-Space 페이지 → **Files** 탭 → **Add file** → **Upload files** 로 가중치 5개를 `weights/` 폴더 안에 올립니다 (HF가 자동으로 LFS 처리).
+Space 페이지 → **Files** 탭 → 왼쪽 트리에서 **`skin/weights/`** 폴더 진입 → **Add file** → **Upload files** 로 가중치 5개를 올립니다 (HF가 자동으로 LFS 처리).
 
 ```
-weights/
+skin/weights/
 ├── lips_dryness_model.pth
 ├── moisture_model.pth
 ├── pigmentation_model.pth
@@ -276,7 +276,7 @@ weights/
 └── skin_type_model.pth
 ```
 
-> Space의 working directory는 `/app/skin/`이라 가중치도 `weights/` (즉 Space 루트 기준 `weights/`)에 위치해야 합니다. 파일을 올리면 Space가 자동 재빌드 후 살아납니다.
+> 가중치는 반드시 `skin/weights/` 안에 들어가야 합니다 (Dockerfile이 `/app/skin/weights/`로 읽음). 폴더가 안 보이면 `skin/` 으로 들어간 뒤 `weights/`를 클릭하세요. 파일을 올리면 Space가 자동 재빌드 후 살아납니다.
 
 ### 4. 환경 변수 (선택)
 
