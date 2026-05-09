@@ -59,7 +59,7 @@ cd skin-backend/skin
 
 직접 학습한 ResNeXt-50 가중치 파일은 용량(약 89MB × 5)이 커서 저장소에 포함되지 않습니다. 아래 링크에서 다운로드해 `skin/weights/` 폴더에 넣어주세요.
 
-> 📦 **모델 가중치 다운로드 링크**: `<여기에 Google Drive 링크 채워주세요>`
+> 📦 **모델 가중치 다운로드 링크**: [Google Drive](https://drive.google.com/file/d/1tKVyAoXvAXFAU9CfKJMWc-oFKKj9e8Mk/view?usp=drive_link)
 
 `skin/weights/` 폴더에 다음 5개 파일이 있어야 합니다:
 
