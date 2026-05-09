@@ -116,6 +116,7 @@ cp .env.example .env
 | `DJANGO_ALLOWED_HOSTS` | 콤마 구분. 기본 `localhost,127.0.0.1` | 운영시 필수 |
 | `OPENAI_API_KEY` | AI 카운슬러 진단 사용 시 | LLM 진단 시 필수 |
 | `OPENAI_MODEL` | 사용할 OpenAI 모델 (기본 `gpt-4o-mini`) | 선택 |
+| `AI_PASSPHRASE` | AI 진단 호출 시 사용자가 입력해야 할 키 (예: `ai`). 비워두면 누구나 호출 가능 — **공개 데모에선 비용 보호용으로 설정 권장** | 선택 |
 | `EMAIL_HOST_USER` / `EMAIL_HOST_PASSWORD` | 이메일 활성화용 SMTP — 현재 메인 흐름에선 미사용 | 선택 |
 
 ### 4. 의존성 설치
@@ -279,7 +280,12 @@ weights/
 
 ### 4. 환경 변수 (선택)
 
-LLM 진단을 켜려면 Space → **Settings** → **Variables and secrets** 에 `OPENAI_API_KEY`를 **Secret** 로 추가. 그 외 `DJANGO_SECRET_KEY`, `OPENAI_MODEL` 등도 동일하게 설정 가능.
+LLM 진단을 켜려면 Space → **Settings** → **Variables and secrets** 에 다음을 추가:
+
+- `OPENAI_API_KEY` (Secret) — OpenAI 키
+- `AI_PASSPHRASE` (Secret 또는 Variable) — 진단 모달에서 사용자가 입력할 키. 공개 데모에서 OpenAI 사용량을 보호합니다. 본인만 알 수 있는 값으로 두면 외부 방문자가 진단 버튼을 눌러도 모달에서 막힙니다.
+
+그 외 `DJANGO_SECRET_KEY`, `OPENAI_MODEL` 등도 동일하게 설정 가능.
 
 ### 5. 동작 확인
 

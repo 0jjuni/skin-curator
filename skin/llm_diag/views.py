@@ -1,3 +1,5 @@
+import os
+
 from django.db.models import Q
 from rest_framework import status
 from rest_framework.response import Response
@@ -12,6 +14,17 @@ from .utils import generate_diagnosis_from_prediction
 
 class GenerateLlmDiagnosisAPIView(APIView):
     def post(self, request, *args, **kwargs):
+        # Cost gate: when AI_PASSPHRASE is set, callers must submit the same value
+        # so the OpenAI quota is not consumed by anonymous demo visitors.
+        expected_passphrase = os.getenv('AI_PASSPHRASE', '').strip()
+        if expected_passphrase:
+            provided = str(request.data.get('passphrase', '')).strip()
+            if provided != expected_passphrase:
+                return Response(
+                    {'error': '올바른 키를 입력해 주세요.'},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+
         prediction_id = request.data.get('prediction_id')
         if not prediction_id:
             return Response({'error': 'Prediction ID is required'}, status=status.HTTP_400_BAD_REQUEST)
