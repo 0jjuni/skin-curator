@@ -9,7 +9,7 @@
 
 - **얼굴 부위 자동 크롭** — MediaPipe FaceMesh로 이마/양볼/입술 추출
 - **5개 ResNeXt-50 모델** — 모공·색소침착·수분·입술 건조·피부 타입을 직접 학습한 가중치로 추론
-- **AI 카운슬러 진단** — OpenAI GPT가 분석 결과를 모닝/이브닝 루틴 + 추천·주의 성분 + 생활 팁이 담긴 **구조화 JSON** 으로 변환
+- **AI 카운슬러 진단** — Google Gemini가 분석 결과를 모닝/이브닝 루틴 + 추천·주의 성분 + 생활 팁이 담긴 **구조화 JSON** 으로 변환 (무료 티어로 동작)
 - **화장품 매칭** — 사용자 15차원 벡터 × 제품 벡터의 **가중치 코사인 유사도** 로 상위 20개 추천 (프론트에선 5단계 어피니티 도트로 표시)
 - **단계별 위저드 UI** — 설문(연령·아토피·트러블·민감도) → 사진 업로드 → 시네마틱 분석 스캔 → 추천 → AI 진단을 풀-스크린 단계로 안내
 - **세션 기반 익명 워크플로우** — 로그인 없이 브라우저 세션 단위로 분석 결과 추적
@@ -18,7 +18,7 @@
 
 - **백엔드**: Django 5, Django REST Framework
 - **ML**: PyTorch, torchvision (ResNeXt-50), MediaPipe, OpenCV
-- **LLM**: OpenAI Python SDK (JSON 모드)
+- **LLM**: Google Gemini Python SDK (`google-genai`, JSON 모드)
 - **추천**: scikit-learn (cosine similarity), NumPy
 - **DB**: SQLite (단일 파일, 별도 설정 불필요)
 - **프론트**: Django 템플릿 + Vanilla JS 단일 페이지 (Cormorant Garamond + Noto Sans KR)
@@ -114,9 +114,8 @@ cp .env.example .env
 | `DJANGO_SECRET_KEY` | 운영 환경에선 임의의 긴 문자열로 교체 | 권장 |
 | `DJANGO_DEBUG` | `true` (개발) / `false` (운영) | 권장 |
 | `DJANGO_ALLOWED_HOSTS` | 콤마 구분. 기본 `localhost,127.0.0.1` | 운영시 필수 |
-| `OPENAI_API_KEY` | AI 카운슬러 진단 사용 시 | LLM 진단 시 필수 |
-| `OPENAI_MODEL` | 사용할 OpenAI 모델 (기본 `gpt-4o-mini`) | 선택 |
-| `AI_PASSPHRASE` | AI 진단 호출 시 사용자가 입력해야 할 키 (예: `ai`). 비워두면 누구나 호출 가능 — **공개 데모에선 비용 보호용으로 설정 권장** | 선택 |
+| `GOOGLE_API_KEY` | AI 카운슬러 진단 사용 시. [aistudio.google.com/apikey](https://aistudio.google.com/apikey)에서 무료 발급 | LLM 진단 시 필수 |
+| `GEMINI_MODEL` | 사용할 Gemini 모델 (기본 `gemini-2.5-flash`) | 선택 |
 | `EMAIL_HOST_USER` / `EMAIL_HOST_PASSWORD` | 이메일 활성화용 SMTP — 현재 메인 흐름에선 미사용 | 선택 |
 
 ### 4. 의존성 설치
@@ -280,12 +279,11 @@ skin/weights/
 
 ### 4. 환경 변수 (선택)
 
-LLM 진단을 켜려면 Space → **Settings** → **Variables and secrets** 에 다음을 추가:
+LLM 진단을 켜려면 Space → **Settings** → **Variables and secrets** 에:
 
-- `OPENAI_API_KEY` (Secret) — OpenAI 키
-- `AI_PASSPHRASE` (Secret 또는 Variable) — 진단 모달에서 사용자가 입력할 키. 공개 데모에서 OpenAI 사용량을 보호합니다. 본인만 알 수 있는 값으로 두면 외부 방문자가 진단 버튼을 눌러도 모달에서 막힙니다.
+- `GOOGLE_API_KEY` (**Secret**) — [Google AI Studio](https://aistudio.google.com/apikey)에서 무료 발급한 Gemini API 키
 
-그 외 `DJANGO_SECRET_KEY`, `OPENAI_MODEL` 등도 동일하게 설정 가능.
+그 외 `DJANGO_SECRET_KEY`, `GEMINI_MODEL` 등도 동일하게 설정 가능.
 
 ### 5. 동작 확인
 

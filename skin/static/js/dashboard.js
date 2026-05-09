@@ -588,87 +588,21 @@
     `;
   }
 
-  /* ============ PASSPHRASE GATE ============ */
-  function openPassphraseModal() {
-    elements.passError.textContent = "";
-    elements.passInput.value = "";
-    elements.passModal.classList.add("open");
-    setTimeout(() => elements.passInput.focus(), 50);
-  }
-
-  function closePassphraseModal() {
-    elements.passModal.classList.remove("open");
-  }
-
-  function bindPassphraseModal() {
-    elements.passCancel.addEventListener("click", closePassphraseModal);
-    elements.passSubmit.addEventListener("click", submitPassphrase);
-    elements.passInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        submitPassphrase();
-      } else if (e.key === "Escape") {
-        closePassphraseModal();
-      }
-    });
-    elements.passModal.addEventListener("click", (e) => {
-      if (e.target === elements.passModal) closePassphraseModal();
-    });
-  }
-
-  async function submitPassphrase() {
-    const value = elements.passInput.value.trim();
-    if (!value) {
-      elements.passError.textContent = "키를 입력해 주세요.";
-      return;
-    }
-    elements.passError.textContent = "";
-    elements.passSubmit.disabled = true;
-    try {
-      await runDiagnosis(value);
-      closePassphraseModal();
-    } catch (error) {
-      // 403 → 키 틀림: 모달 유지하고 에러 표시
-      if (error && error.status === 403) {
-        elements.passError.textContent = error.message || "올바른 키를 입력해 주세요.";
-        elements.passInput.select();
-      } else {
-        elements.passError.textContent = error.message || "요청에 실패했어요.";
-      }
-    } finally {
-      elements.passSubmit.disabled = false;
-    }
-  }
-
   async function fetchDiagnosis() {
     if (!state.predictionId) {
       toast("분석 결과가 필요해요.", "error");
       return;
     }
     if (state.busy) return;
-    openPassphraseModal();
-  }
-
-  async function runDiagnosis(passphrase) {
     state.busy = true;
+
     showScene("diagnosis");
     renderDiagnosisLoader();
     try {
-      const response = await fetch("/api/generate/", {
+      const data = await api("/api/generate/", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          prediction_id: state.predictionId,
-          passphrase,
-        }),
+        body: JSON.stringify({ prediction_id: state.predictionId }),
       });
-      const contentType = response.headers.get("content-type") || "";
-      const data = contentType.includes("application/json") ? await response.json() : await response.text();
-      if (!response.ok) {
-        const err = new Error(extractError(data, response.status));
-        err.status = response.status;
-        throw err;
-      }
       const payload = parseDiagnosisPayload(data.diagnosis_text);
       state.diagnosisPayload = payload;
       if (payload && typeof payload === "object" && (payload.summary || payload.headline)) {
@@ -677,19 +611,12 @@
         renderPlaintextDiagnosis(data.diagnosis_text || "진단 결과가 비어있습니다.");
       }
     } catch (error) {
-      // 403은 모달에서 다시 시도하도록 throw 그대로 위임
-      if (error.status === 403) {
-        // 결과 화면에서 진단 화면으로 이미 전환됐던 걸 되돌림
-        showScene("result");
-        elements.diagnosisText.innerHTML = "";
-        throw error;
-      }
       elements.diagnosisText.innerHTML = `
         <div class="empty">
           <span class="ico">⚠️</span>
           ${escapeHtml(error.message || "AI 진단을 불러오지 못했어요.")}
           <div style="margin-top:12px;font-size:12px;color:var(--muted);">
-            OPENAI_API_KEY 설정을 확인해 주세요.
+            GOOGLE_API_KEY 설정을 확인해 주세요.
           </div>
         </div>
       `;
@@ -735,11 +662,6 @@
       markedCard: $("marked-card"),
       diagnosisText: $("diagnosis-text"),
       toast: $("toast"),
-      passModal: $("pass-modal"),
-      passInput: $("pass-input"),
-      passSubmit: $("pass-submit"),
-      passCancel: $("pass-cancel"),
-      passError: $("pass-error"),
     });
   }
 
@@ -765,7 +687,6 @@
     bindOptionGroups();
     bindUpload();
     bindActions();
-    bindPassphraseModal();
     showScene("welcome");
   }
 

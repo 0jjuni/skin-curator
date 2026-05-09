@@ -3,7 +3,9 @@ import logging
 import os
 
 from django.conf import settings
-from openai import OpenAI, OpenAIError
+from google import genai
+from google.genai import types as genai_types
+from google.genai.errors import APIError
 
 
 logger = logging.getLogger(__name__)
@@ -62,36 +64,37 @@ def build_user_prompt(prediction):
 
 
 def generate_diagnosis_from_prediction(prediction):
-    if not settings.OPENAI_API_KEY:
-        logger.warning("OPENAI_API_KEY is not configured; skipping LLM diagnosis")
+    if not settings.GOOGLE_API_KEY:
+        logger.warning("GOOGLE_API_KEY is not configured; skipping LLM diagnosis")
         return None
 
-    model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
-    client = OpenAI(api_key=settings.OPENAI_API_KEY)
+    model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+    client = genai.Client(api_key=settings.GOOGLE_API_KEY)
 
     try:
-        response = client.chat.completions.create(
+        response = client.models.generate_content(
             model=model,
-            messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": build_user_prompt(prediction)},
-            ],
-            response_format={"type": "json_object"},
-            temperature=0.7,
-            max_tokens=1400,
+            contents=build_user_prompt(prediction),
+            config=genai_types.GenerateContentConfig(
+                system_instruction=SYSTEM_PROMPT,
+                response_mime_type="application/json",
+                temperature=0.7,
+                max_output_tokens=1400,
+            ),
         )
-    except OpenAIError:
-        logger.exception("LLM diagnosis call failed (model=%s)", model)
+    except APIError:
+        logger.exception("Gemini diagnosis call failed (model=%s)", model)
         return None
 
-    raw = response.choices[0].message.content
+    raw = getattr(response, "text", None)
     if not raw:
+        logger.warning("Gemini returned empty content for diagnosis")
         return None
 
     try:
         parsed = json.loads(raw)
     except json.JSONDecodeError:
-        logger.exception("LLM diagnosis returned non-JSON content: %s", raw[:500])
+        logger.exception("Gemini diagnosis returned non-JSON content: %s", raw[:500])
         return None
 
     return json.dumps(parsed, ensure_ascii=False)
