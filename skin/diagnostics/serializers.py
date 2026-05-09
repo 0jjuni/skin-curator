@@ -64,5 +64,6 @@ class PredictionSerializer(serializers.Serializer):
         allow_empty=False
     )
 
-    # 얼굴 좌표가 표시된 이미지 URL (로그인 여부와 관계없이 항상 포함)
-    marked_image_url = serializers.CharField(max_length=500, required=False, allow_blank=True)
+    # FaceMesh 랜드마크가 그려진 이미지를 base64 data URL로 인라인 전달.
+    # 디스크와 DB 어디에도 저장하지 않으므로 길이 제한 없이 받기만 합니다.
+    marked_image_url = serializers.CharField(required=False, allow_blank=True, trim_whitespace=False)

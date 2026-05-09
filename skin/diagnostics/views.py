@@ -45,13 +45,21 @@ class CropAndPredictAPIView(APIView):
         serializer = PredictionSerializer(data=prediction_data)
         serializer.is_valid(raise_exception=True)
 
+        validated = dict(serializer.validated_data)
+        # The marked image is a base64 data URL — keep it in the response
+        # but do not persist it to the DB (the column is CharField(500)
+        # and we don't want to bloat storage either).
+        marked_image_url = validated.pop("marked_image_url", "")
+
         prediction_instance = PredictionResult.objects.create(
             user=request.user if request.user.is_authenticated else None,
             session_key=ensure_session_key(request),
-            **serializer.validated_data,
+            **validated,
         )
         result_serializer = PredictionSerializer(prediction_instance, context={"request": request})
-        return Response(result_serializer.data, status=status.HTTP_200_OK)
+        response_data = dict(result_serializer.data)
+        response_data["marked_image_url"] = marked_image_url
+        return Response(response_data, status=status.HTTP_200_OK)
 
 
 class UserDiagnosticsAPIView(APIView):
