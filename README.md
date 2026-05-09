@@ -25,21 +25,25 @@
 ## 디렉터리 구조
 
 ```
-skin/
-├── manage.py
-├── pyproject.toml          # poetry 의존성 정의
-├── .env.example
-├── skin/                   # Django 프로젝트 설정 (settings, urls, wsgi)
-├── accounts/               # 커스텀 유저(현재 비활성), 이메일 활성화 코드
-├── diagnostics/            # 이미지 업로드 → ResNeXt 추론 → 결과 저장
-│   └── ml.py               # 모델 로딩, 얼굴 크롭, 추론 파이프라인
-├── llm_diag/               # 예측 결과를 GPT 진단 텍스트로 변환
-├── reco/                   # 설문 + 예측 → 제품 추천
-│   └── management/commands/import_products.py
-├── data/                   # 제품 정보 CSV (crawled, 동봉)
-├── weights/                # *.pth (별도 다운로드 — 아래 참조)
-├── templates/dashboard.html
-└── static/js/dashboard.js
+.
+├── README.md
+├── LICENSE                 # CC BY-NC 4.0
+├── research/               # 데이터 수집·전처리·모델 학습 노트북
+└── skin/                   # Django 프로젝트
+    ├── manage.py
+    ├── pyproject.toml      # poetry 의존성 정의
+    ├── .env.example
+    ├── skin/               # Django 설정 (settings, urls, wsgi)
+    ├── accounts/           # 커스텀 유저(현재 비활성), 이메일 활성화 코드
+    ├── diagnostics/        # 이미지 업로드 → ResNeXt 추론 → 결과 저장
+    │   └── ml.py           # 모델 로딩, 얼굴 크롭, 추론 파이프라인
+    ├── llm_diag/           # 예측 결과를 GPT 진단 텍스트로 변환
+    ├── reco/               # 설문 + 예측 → 제품 추천
+    │   └── management/commands/import_products.py
+    ├── data/               # 제품 정보 CSV (crawled, 동봉)
+    ├── weights/            # *.pth (별도 다운로드 — 아래 참조)
+    ├── templates/dashboard.html
+    └── static/js/dashboard.js
 ```
 
 ## 설치 및 실행
@@ -117,8 +121,9 @@ poetry run python manage.py runserver
 
 ## 학습 데이터 및 모델
 
-- **피부 분석 모델**: 학회 공개 피부 이미지 데이터셋을 ResNeXt-50으로 직접 파인튜닝. 이마/볼 영역에 대해 모공·색소·수분 3분류, 피부타입 3분류, 입술 건조 3분류 모델로 분리 학습.
-- **제품 데이터**: 화장품 리뷰 사이트에서 학술 목적으로 크롤링. 제품명·브랜드·로고·피부 특성 키워드 점수를 정리한 CSV. 원 출처의 모든 권리는 해당 사이트와 브랜드에 귀속됩니다.
+- **피부 분석 모델**: AI Hub의 [한국인 피부상태 측정 데이터](https://www.aihub.or.kr/aihubdata/data/view.do?currMenu=115&topMenu=100&dataSetSn=71645)(dataSetSn=71645)를 ResNeXt-50으로 직접 파인튜닝. 이마/볼 영역에 대해 모공·색소·수분 3분류, 피부타입 3분류, 입술 건조 3분류 모델로 분리 학습. 원본 이미지는 AI Hub의 이용 정책에 따라 본 저장소에 포함되지 않으며, 사용자가 직접 신청해 받아야 합니다.
+- **제품 데이터**: 화장품 리뷰 사이트 [화해(hwahae.co.kr)](https://www.hwahae.co.kr)의 랭킹 페이지를 학술 목적으로 일회성 크롤링(2024). 피부 타입별·연령대별 제품과 리뷰 키워드 비율을 정리한 CSV. 원 출처의 모든 권리는 화해 및 각 브랜드에 귀속되며, 상업적 재배포는 금지합니다.
+- **데이터 수집·전처리·모델 학습 코드**는 [`research/`](research/) 폴더에 노트북으로 공개되어 있습니다.
 
 ## 알려진 한계
 
