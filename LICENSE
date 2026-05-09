@@ -1,0 +1,41 @@
+Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)
+
+Copyright (c) 2026 0jjuni
+
+This work — including the source code, the trained model weights, and the
+crawled product data accompanying this repository — is licensed under the
+Creative Commons Attribution-NonCommercial 4.0 International License.
+
+You are free to:
+  - Share — copy and redistribute the material in any medium or format
+  - Adapt — remix, transform, and build upon the material
+
+Under the following terms:
+  - Attribution — You must give appropriate credit, provide a link to the
+    license, and indicate if changes were made. You may do so in any
+    reasonable manner, but not in any way that suggests the licensor
+    endorses you or your use.
+  - NonCommercial — You may not use the material for commercial purposes.
+  - No additional restrictions — You may not apply legal terms or
+    technological measures that legally restrict others from doing
+    anything the license permits.
+
+To view a copy of this license, visit:
+  https://creativecommons.org/licenses/by-nc/4.0/
+
+Or send a letter to:
+  Creative Commons, PO Box 1866, Mountain View, CA 94042, USA.
+
+================================================================================
+ADDITIONAL NOTICES
+================================================================================
+
+This repository was produced as a graduation project. It is intended for
+educational and research purposes only. The skin-analysis output is not a
+medical diagnosis and must not be relied upon for medical decisions.
+
+The product information under `skin/data/` was collected via web crawling
+for academic study. Brand names, product titles, and logo URLs remain the
+property of their respective owners. Redistribution of this data outside
+of non-commercial educational use may be subject to the original sources'
+terms of service.

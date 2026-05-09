@@ -2,13 +2,14 @@ import csv
 import re
 from pathlib import Path
 
+from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
 from reco.models import ProductFeature, ProductInfo
 
 
-DEFAULT_DATA_DIR = Path("C:/Users/iyoun/Desktop/03_프로젝트_코드/1.데이터/origin/data")
+DEFAULT_DATA_DIR = settings.BASE_DIR / "data"
 
 
 def clean_key(*parts):
