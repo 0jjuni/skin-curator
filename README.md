@@ -1,3 +1,15 @@
+---
+title: Skin Curator
+emoji: 🌸
+colorFrom: pink
+colorTo: red
+sdk: docker
+app_port: 7860
+pinned: false
+license: cc-by-nc-4.0
+short_description: AI 피부 진단 + K-뷰티 화장품 큐레이션 (ResNeXt + Gemini)
+---
+
 # Skin Curator
 
 졸업작품으로 제작한 **AI 피부 분석 + 화장품 추천** 백엔드입니다.
