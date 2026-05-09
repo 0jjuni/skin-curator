@@ -1,14 +1,15 @@
-from django.conf import settings
 from django.contrib import admin
 from django.shortcuts import render
-from django.urls import include, path, re_path
-from django.views.static import serve
+from django.urls import include, path
 
 
 def home(request):
     return render(request, "dashboard.html")
 
 
+# No /media/ route: marked-up face images are returned inline as base64
+# data URLs (see diagnostics.ml.encode_marked_image), so no user-uploaded
+# image is ever written to the server filesystem.
 urlpatterns = [
     path("", home, name="home"),
     path("analysis/", home, name="analysis"),
@@ -18,12 +19,4 @@ urlpatterns = [
     path("api/", include("diagnostics.urls")),
     path("api/", include("llm_diag.urls")),
     path("api/", include("reco.urls")),
-    # Always serve uploaded media on this demo deployment. In a real
-    # production setup, point /media/ at object storage (S3, Cloud Storage,
-    # etc.) instead of letting Django serve files from the container.
-    re_path(
-        r"^media/(?P<path>.*)$",
-        serve,
-        {"document_root": settings.MEDIA_ROOT},
-    ),
 ]

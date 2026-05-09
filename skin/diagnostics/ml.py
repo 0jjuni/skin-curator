@@ -1,7 +1,5 @@
+import base64
 import logging
-import os
-import uuid
-from datetime import datetime
 from functools import lru_cache
 
 import cv2
@@ -136,7 +134,13 @@ def require_crop(crop, name):
     return crop
 
 
-def save_marked_image(image, landmarks):
+def encode_marked_image(image, landmarks):
+    """Draw the FaceMesh landmarks on the image and return a data URL.
+
+    The marked image is never written to disk — we encode it as an
+    inline base64 data URL so the user's photo leaves no trace on the
+    server filesystem after the response is sent.
+    """
     h, w, _ = image.shape
     if max(h, w) >= 1500:
         point_size = 5
@@ -150,13 +154,11 @@ def save_marked_image(image, landmarks):
         y = int(landmark.y * h)
         cv2.circle(image, (x, y), point_size, (0, 255, 0), -1)
 
-    marked_image_path = os.path.join(settings.MEDIA_ROOT, "marked_images")
-    os.makedirs(marked_image_path, exist_ok=True)
-
-    file_name = f"marked_{datetime.now().strftime('%Y%m%d%H%M%S')}_{uuid.uuid4().hex}.jpg"
-    full_path = os.path.join(marked_image_path, file_name)
-    cv2.imwrite(full_path, image)
-    return f"{settings.MEDIA_URL}marked_images/{file_name}"
+    success, buffer = cv2.imencode(".jpg", image, [int(cv2.IMWRITE_JPEG_QUALITY), 85])
+    if not success:
+        return None
+    encoded = base64.b64encode(buffer.tobytes()).decode("ascii")
+    return f"data:image/jpeg;base64,{encoded}"
 
 
 def analyze_skin_image(uploaded_file):
@@ -203,5 +205,5 @@ def analyze_skin_image(uploaded_file):
         "right_cheek_moisture_probabilities": prob_right_moisture.tolist(),
         "lips_dryness_prediction": predicted_lips_dryness,
         "lips_dryness_probabilities": prob_lips_dryness.tolist(),
-        "marked_image_url": save_marked_image(image, landmarks),
+        "marked_image_url": encode_marked_image(image, landmarks),
     }
