@@ -1,0 +1,5 @@
+skin/weights/lips_dryness_model.pth filter=lfs diff=lfs merge=lfs -text
+skin/weights/moisture_model.pth filter=lfs diff=lfs merge=lfs -text
+skin/weights/pigmentation_model.pth filter=lfs diff=lfs merge=lfs -text
+skin/weights/pore_model.pth filter=lfs diff=lfs merge=lfs -text
+skin/weights/skin_type_model.pth filter=lfs diff=lfs merge=lfs -text
